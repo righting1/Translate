@@ -1,0 +1,9 @@
+site_name: Translate API
+theme:
+  name: readthedocs
+nav:
+  - 首页: index.md
+docs_dir: docs
+site_dir: site
+
+
