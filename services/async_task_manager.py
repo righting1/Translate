@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Òì²½ÈÎÎñ¹ÜÀíÏµÍ³
-ÓÃÓÚ´¦Àí³¤Ê±¼äÔËĞĞµÄ·­ÒëºÍ×Ü½áÈÎÎñ
+å¼‚æ­¥ä»»åŠ¡ç®¡ç†ç³»ç»Ÿ
+ç”¨äºå¤„ç†é•¿æ—¶é—´è¿è¡Œçš„ç¿»è¯‘å’Œæ€»ç»“ä»»åŠ¡
 """
 import asyncio
 import uuid
@@ -18,16 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 class TaskStatus(str, Enum):
-    """ÈÎÎñ×´Ì¬Ã¶¾Ù"""
-    PENDING = "pending"      # µÈ´ı´¦Àí
-    RUNNING = "running"      # ÕıÔÚ´¦Àí
-    COMPLETED = "completed"  # ÒÑÍê³É
-    FAILED = "failed"        # Ê§°Ü
-    EXPIRED = "expired"      # ÒÑ¹ıÆÚ
+    """ä»»åŠ¡çŠ¶æ€æšä¸¾"""
+    PENDING = "pending"      # ç­‰å¾…å¤„ç†
+    RUNNING = "running"      # æ­£åœ¨å¤„ç†
+    COMPLETED = "completed"  # å·²å®Œæˆ
+    FAILED = "failed"        # å¤±è´¥
+    EXPIRED = "expired"      # å·²è¿‡æœŸ
 
 
 class TaskType(str, Enum):
-    """ÈÎÎñÀàĞÍÃ¶¾Ù"""
+    """ä»»åŠ¡ç±»å‹æšä¸¾"""
     ZH2EN = "zh2en"
     EN2ZH = "en2zh"
     SUMMARIZE = "summarize"
@@ -37,7 +37,7 @@ class TaskType(str, Enum):
 
 @dataclass
 class TaskInfo:
-    """ÈÎÎñĞÅÏ¢"""
+    """ä»»åŠ¡ä¿¡æ¯"""
     task_id: str
     task_type: TaskType
     status: TaskStatus
@@ -46,21 +46,21 @@ class TaskInfo:
     input_data: Dict[str, Any]
     result: Optional[str] = None
     error_message: Optional[str] = None
-    progress: int = 0  # ½ø¶È°Ù·Ö±È 0-100
+    progress: int = 0  # è¿›åº¦ç™¾åˆ†æ¯” 0-100
     model_name: Optional[str] = None
     use_chains: bool = True
     
     def to_dict(self) -> Dict[str, Any]:
-        """×ª»»Îª×Öµä¸ñÊ½"""
+        """è½¬æ¢ä¸ºå­—å…¸æ ¼å¼"""
         data = asdict(self)
-        # ×ª»»datetimeÎª×Ö·û´®
+        # è½¬æ¢datetimeä¸ºå­—ç¬¦ä¸²
         data['created_at'] = self.created_at.isoformat()
         data['updated_at'] = self.updated_at.isoformat()
         return data
 
 
 class AsyncTaskManager:
-    """Òì²½ÈÎÎñ¹ÜÀíÆ÷"""
+    """å¼‚æ­¥ä»»åŠ¡ç®¡ç†å™¨"""
     
     def __init__(self, max_concurrent_tasks: int = 5, task_ttl_hours: int = 24):
         self.tasks: Dict[str, TaskInfo] = {}
@@ -68,9 +68,16 @@ class AsyncTaskManager:
         self.task_ttl = timedelta(hours=task_ttl_hours)
         self._running_tasks: Dict[str, asyncio.Task] = {}
         self._semaphore = asyncio.Semaphore(max_concurrent_tasks)
+        self._cleanup_started = False
         
-        # Æô¶¯ÇåÀíÈÎÎñ
-        asyncio.create_task(self._cleanup_expired_tasks())
+        # å¯åŠ¨æ¸…ç†ä»»åŠ¡ï¼ˆä»…å½“å­˜åœ¨è¿è¡Œä¸­çš„äº‹ä»¶å¾ªç¯æ—¶ï¼‰
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._cleanup_expired_tasks())
+            self._cleanup_started = True
+        except RuntimeError:
+            # åœ¨æ— äº‹ä»¶å¾ªç¯ç¯å¢ƒï¼ˆå¦‚æ¨¡å—å¯¼å…¥/æµ‹è¯•æ”¶é›†æ—¶ï¼‰è·³è¿‡ï¼Œå¾…é¦–æ¬¡ä»»åŠ¡æ‰§è¡Œæ—¶å†å¯åŠ¨
+            logger.debug("AsyncTaskManager: no running loop at init; will start cleanup later")
     
     def create_task(
         self,
@@ -79,7 +86,7 @@ class AsyncTaskManager:
         model_name: Optional[str] = None,
         use_chains: bool = True
     ) -> str:
-        """´´½¨ĞÂÈÎÎñ"""
+        """åˆ›å»ºæ–°ä»»åŠ¡"""
         task_id = str(uuid.uuid4())
         now = datetime.now()
         
@@ -97,18 +104,25 @@ class AsyncTaskManager:
         self.tasks[task_id] = task_info
         logger.info(f"Created task {task_id} of type {task_type}")
         
-        # Òì²½Ö´ĞĞÈÎÎñ
-        asyncio.create_task(self._execute_task(task_id))
+        # å¼‚æ­¥æ‰§è¡Œä»»åŠ¡
+        try:
+            task = asyncio.create_task(self._execute_task(task_id))
+            self._running_tasks[task_id] = task
+        except RuntimeError:
+            # æ— è¿è¡Œå¾ªç¯æ—¶ï¼Œå»¶è¿Ÿåˆ°è°ƒç”¨æ–¹äº‹ä»¶å¾ªç¯ä¸­æ‰§è¡Œ
+            loop = asyncio.get_event_loop()
+            task = loop.create_task(self._execute_task(task_id))
+            self._running_tasks[task_id] = task
         
         return task_id
     
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """»ñÈ¡ÈÎÎñ×´Ì¬"""
+        """è·å–ä»»åŠ¡çŠ¶æ€"""
         task = self.tasks.get(task_id)
         if not task:
             return None
         
-        # ¼ì²éÈÎÎñÊÇ·ñ¹ıÆÚ
+        # æ£€æŸ¥ä»»åŠ¡æ˜¯å¦è¿‡æœŸ
         if self._is_task_expired(task):
             task.status = TaskStatus.EXPIRED
             task.updated_at = datetime.now()
@@ -116,7 +130,7 @@ class AsyncTaskManager:
         return task.to_dict()
     
     def get_task_result(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """»ñÈ¡ÈÎÎñ½á¹û"""
+        """è·å–ä»»åŠ¡ç»“æœ"""
         task = self.tasks.get(task_id)
         if not task:
             return None
@@ -148,13 +162,13 @@ class AsyncTaskManager:
             }
     
     def cancel_task(self, task_id: str) -> bool:
-        """È¡ÏûÈÎÎñ"""
+        """å–æ¶ˆä»»åŠ¡"""
         task = self.tasks.get(task_id)
         if not task:
             return False
         
         if task.status in [TaskStatus.PENDING, TaskStatus.RUNNING]:
-            # È¡ÏûÕıÔÚÔËĞĞµÄÈÎÎñ
+            # å–æ¶ˆæ­£åœ¨è¿è¡Œçš„ä»»åŠ¡
             if task_id in self._running_tasks:
                 self._running_tasks[task_id].cancel()
                 del self._running_tasks[task_id]
@@ -168,42 +182,50 @@ class AsyncTaskManager:
         return False
     
     def list_tasks(self, status: Optional[TaskStatus] = None) -> List[Dict[str, Any]]:
-        """ÁĞ³öËùÓĞÈÎÎñ"""
+        """åˆ—å‡ºæ‰€æœ‰ä»»åŠ¡"""
         tasks = []
         for task in self.tasks.values():
             if status is None or task.status == status:
                 tasks.append(task.to_dict())
         
-        # °´´´½¨Ê±¼äµ¹ĞòÅÅÁĞ
+        # æŒ‰åˆ›å»ºæ—¶é—´å€’åºæ’åˆ—
         tasks.sort(key=lambda x: x['created_at'], reverse=True)
         return tasks
     
     async def _execute_task(self, task_id: str):
-        """Ö´ĞĞÈÎÎñ"""
-        async with self._semaphore:  # ÏŞÖÆ²¢·¢Êı
+        """æ‰§è¡Œä»»åŠ¡"""
+        # ç¡®ä¿æ¸…ç†ä»»åŠ¡å·²å¯åŠ¨
+        if not self._cleanup_started:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._cleanup_expired_tasks())
+                self._cleanup_started = True
+            except RuntimeError:
+                pass
+        async with self._semaphore:  # é™åˆ¶å¹¶å‘æ•°
             task = self.tasks.get(task_id)
             if not task:
                 return
             
             try:
-                # ¸üĞÂÈÎÎñ×´Ì¬ÎªÔËĞĞÖĞ
+                # æ›´æ–°ä»»åŠ¡çŠ¶æ€ä¸ºè¿è¡Œä¸­
                 task.status = TaskStatus.RUNNING
                 task.updated_at = datetime.now()
                 task.progress = 10
                 logger.info(f"Starting execution of task {task_id}")
                 
-                # µ¼Èë·şÎñ
+                # å¯¼å…¥æœåŠ¡
                 from services.langchain_translate import LangChainTranslationService
                 service = LangChainTranslationService(
                     model_name=task.model_name,
                     use_chains=task.use_chains
                 )
                 
-                # ¸üĞÂ½ø¶È
+                # æ›´æ–°è¿›åº¦
                 task.progress = 30
                 task.updated_at = datetime.now()
                 
-                # ¸ù¾İÈÎÎñÀàĞÍÖ´ĞĞÏàÓ¦µÄ²Ù×÷
+                # æ ¹æ®ä»»åŠ¡ç±»å‹æ‰§è¡Œç›¸åº”çš„æ“ä½œ
                 if task.task_type == TaskType.ZH2EN:
                     result = await service.zh2en(task.input_data['text'])
                 elif task.task_type == TaskType.EN2ZH:
@@ -220,7 +242,7 @@ class AsyncTaskManager:
                 else:
                     raise ValueError(f"Unsupported task type: {task.task_type}")
                 
-                # ÈÎÎñÍê³É
+                # ä»»åŠ¡å®Œæˆ
                 task.result = result
                 task.status = TaskStatus.COMPLETED
                 task.progress = 100
@@ -238,16 +260,16 @@ class AsyncTaskManager:
                 task.updated_at = datetime.now()
                 logger.error(f"Task {task_id} failed: {e}")
             finally:
-                # ÇåÀíÔËĞĞÖĞµÄÈÎÎñ¼ÇÂ¼
+                # æ¸…ç†è¿è¡Œä¸­çš„ä»»åŠ¡è®°å½•
                 if task_id in self._running_tasks:
                     del self._running_tasks[task_id]
     
     def _is_task_expired(self, task: TaskInfo) -> bool:
-        """¼ì²éÈÎÎñÊÇ·ñ¹ıÆÚ"""
+        """æ£€æŸ¥ä»»åŠ¡æ˜¯å¦è¿‡æœŸ"""
         return datetime.now() - task.created_at > self.task_ttl
     
     async def _cleanup_expired_tasks(self):
-        """¶¨ÆÚÇåÀí¹ıÆÚÈÎÎñ"""
+        """å®šæœŸæ¸…ç†è¿‡æœŸä»»åŠ¡"""
         while True:
             try:
                 expired_tasks = []
@@ -259,13 +281,13 @@ class AsyncTaskManager:
                     del self.tasks[task_id]
                     logger.info(f"Cleaned up expired task {task_id}")
                 
-                # Ã¿Ğ¡Ê±ÇåÀíÒ»´Î
+                # æ¯å°æ—¶æ¸…ç†ä¸€æ¬¡
                 await asyncio.sleep(3600)
                 
             except Exception as e:
                 logger.error(f"Error in cleanup task: {e}")
-                await asyncio.sleep(300)  # ³ö´íºó5·ÖÖÓºóÖØÊÔ
+                await asyncio.sleep(300)  # å‡ºé”™å5åˆ†é’Ÿåé‡è¯•
 
 
-# È«¾ÖÈÎÎñ¹ÜÀíÆ÷ÊµÀı
+# å…¨å±€ä»»åŠ¡ç®¡ç†å™¨å®ä¾‹
 task_manager = AsyncTaskManager()

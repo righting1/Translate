@@ -1,0 +1,247 @@
+@baseUrl = http://localhost:8000
+@taskId = d81bc0bb-478d-440c-989c-89c65c8c0d99
+
+# Translate API - 全量接口速查（同步 / 异步 / 流式 / 任务）
+# 使用 VS Code 插件 "REST Client" 逐条发送请求
+# 说明：
+# - model 可选：如需指定模型，在请求体中添加 "model": "your_model"
+# - use_chains 已默认启用，无需传参
+
+### 功能概览
+###
+# 列出全部功能（包含 code/name/description/url/method）
+GET {{baseUrl}}/api/translate/features
+
+### 可用模型
+# 列出可用模型
+GET {{baseUrl}}/api/translate/models
+
+
+### 同步接口（翻译 / 总结）
+###
+# 同步：中译英
+POST {{baseUrl}}/api/translate/zh2en
+Content-Type: application/json
+
+{
+  "text": "今天天气不错，适合出去走走。",
+  "model": ""
+}
+
+### 同步：英译中
+POST {{baseUrl}}/api/translate/en2zh
+Content-Type: application/json
+
+{
+  "text": "The weather is great today for a walk.",
+  "model": ""
+}
+
+### 同步：自动翻译（自动检测源语言）
+POST {{baseUrl}}/api/translate/auto
+Content-Type: application/json
+
+{
+  "text": "你好 world",
+  "model": ""
+}
+
+
+### 同步：总结（max_length 控制摘要长度）
+POST {{baseUrl}}/api/translate/summarize?max_length=120
+Content-Type: application/json
+
+{
+  "text": "这是一个较长的段落，用于测试摘要功能。摘要应尽量简洁，覆盖要点。",
+  "model": ""
+}
+
+
+
+
+### 同步：关键词总结（summary_length 控制长度）
+
+POST {{baseUrl}}/api/translate/keyword-summary?summary_length=80
+Content-Type: application/json
+
+{
+  "text": "人工智能、机器学习、深度学习、自然语言处理、计算机视觉、数据挖掘。",
+  "model": ""
+}
+
+### 同步：结构化总结（max_length 控制长度）
+
+POST {{baseUrl}}/api/translate/structured-summary?max_length=200
+Content-Type: application/json
+
+{
+  "text": "请根据以下内容输出结构化总结：包含背景、问题、方案与结论。这里是正文……",
+  "model": ""
+}
+
+
+### LangChain（翻译 / 总结）
+###
+# LangChain：通用翻译
+POST {{baseUrl}}/api/translate/langchain/translate
+Content-Type: application/json
+
+{
+  "text": "你好，欢迎来到LangChain演示。",
+  "target_language": "英文",
+  "source_language": null,
+  "context": "如需保持术语一致，请参考上下文。",
+  "model": ""
+}
+
+### LangChain：中译英
+
+POST {{baseUrl}}/api/translate/langchain/zh2en
+Content-Type: application/json
+
+{
+  "text": "提高代码可维护性的一种方式是使用枚举来集中管理常量。",
+  "model": ""
+}
+
+### LangChain：英译中
+
+POST {{baseUrl}}/api/translate/langchain/en2zh
+Content-Type: application/json
+
+{
+  "text": "Using enums can help centralize constants and improve maintainability.",
+  "model": ""
+}
+
+### LangChain：总结
+
+POST {{baseUrl}}/api/translate/langchain/summarize
+Content-Type: application/json
+
+{
+  "text": "这是关于LangChain和提示词管理的一段文字，旨在测试总结能力。",
+  "max_length": 100,
+  "context": "",
+  "model": ""
+}
+
+### LangChain：列出可用链
+
+GET {{baseUrl}}/api/translate/langchain/chains/list
+
+###
+# LangChain：查看链详情（示例：basic_summary_chain）
+# 可用链名参考：zh_to_en_chain | en_to_zh_chain | auto_translate_chain | basic_summary_chain | keyword_summary_chain | structured_summary_chain
+POST {{baseUrl}}/api/translate/langchain/chains/inspect/basic_summary_chain
+
+### LangChain：清空链上下文
+#
+DELETE {{baseUrl}}/api/translate/langchain/chains/clear
+
+
+### 异步接口（提交 -> 轮询 -> 获取结果）
+###
+# 异步：提交中译英（返回 task_id） 没问题
+POST {{baseUrl}}/api/translate/async/zh2en
+Content-Type: application/json
+
+{
+  "text": "你好你是谁。",
+  "model": ""
+}
+
+### 异步：提交英译中 没问题
+#
+POST {{baseUrl}}/api/translate/async/en2zh
+Content-Type: application/json
+
+{
+  "text": "Hello word.",
+  "model": ""
+}
+
+### 异步：提交总结
+# 异步：提交总结（max_length 控制摘要长度） 没问题
+POST {{baseUrl}}/api/translate/async/summarize?max_length=120
+Content-Type: application/json
+
+{
+  "text": "人工智能（AI）是一门研究和开发模拟、延伸和扩展人类智能的技术科学。它涵盖了多个领域和技术，旨在让机器能够执行传统上需要人类智能的任务。人工智能的核心领域包括机器学习、自然语言处理、计算机视觉和机器人学等。机器学习通过算法从数据中学习和预测，是人工智能的基础技术之一。自然语言处理则专注于理解和生成人类语言，应用于机器翻译、对话系统等场景。计算机视觉让机器能够理解和分析图像和视频，用于人脸识别、目标检测等。机器人学则涉及智能物理设备的设计与开发，如自动驾驶和服务机器人。",
+  "model": ""
+}
+
+### 异步：提交关键词总结
+# 异步：提交关键词总结（summary_length 控制长度） 没问题
+POST {{baseUrl}}/api/translate/async/keyword-summary?summary_length=80
+Content-Type: application/json
+
+{
+  "text": "云原生、容器化、服务网格、可观测性、DevOps、自动化部署。",
+  "model": ""
+}
+
+### 异步：提交结构化总结
+# 异步：提交结构化总结（max_length 控制长度） 没有问题
+POST {{baseUrl}}/api/translate/async/structured-summary?max_length=200
+Content-Type: application/json
+
+{
+  "text": "请从背景、现状、挑战、方案、结论五个维度进行结构化总结。",
+  "model": ""
+}
+
+### 异步：任务状态
+# 异步：任务状态
+GET {{baseUrl}}/api/translate/async/status/5a7b333f-503d-4b27-b68b-acb662f79d3f
+
+### 异步：任务结果
+# 异步：任务结果
+GET {{baseUrl}}/api/translate/async/5a7b333f-503d-4b27-b68b-acb662f79d3f
+
+### 异步：取消任务
+# 异步：取消任务
+DELETE {{baseUrl}}/api/translate/async/cancel/{{taskId}}
+
+### 异步：列出任务
+# 异步：列出任务（可按状态过滤：pending/running/completed/failed/expired）
+GET {{baseUrl}}/api/translate/async/tasks?status=completed&limit=20
+
+### 异步：统计信息
+# 异步：统计信息
+GET {{baseUrl}}/api/translate/async/stats
+
+
+### 流式接口（SSE）— 前端可边收边渲染
+###
+# 流式：中译英
+POST {{baseUrl}}/api/translate/stream/zh2en
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "text": "流式演示：请将这句话翻译成英文以测试SSE。",
+  "model": ""
+}
+
+### 流式：英译中
+# 流式：英译中
+POST {{baseUrl}}/api/translate/stream/en2zh
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "text": "Streaming responses allow clients to receive data progressively.",
+  "model": ""
+}
+
+### 流式：总结
+# 流式：总结
+POST {{baseUrl}}/api/translate/stream/summarize
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "text": "这是一个用于SSE总结的段落，用于测试边生成边返回的效果。",
+  "model": ""
+}

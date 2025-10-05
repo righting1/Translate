@@ -188,6 +188,33 @@ class BaseLangChainService:
             import traceback
             logger.debug(f"Traceback: {traceback.format_exc()}")
             return f"Text generation failed: {str(e)}"
+
+    async def generate_text_stream(self, prompt: str, **kwargs):
+        """
+        以流式方式生成文本，返回一个异步生成器，逐步产出内容片段。
+        优先调用 llm.astream；若不可用，则回退为一次性生成并分片输出。
+        """
+        if LANGCHAIN_AVAILABLE and self.llm is not None and hasattr(self.llm, "astream"):
+            try:
+                async for chunk in self.llm.astream(prompt):
+                    piece = None
+                    # 兼容不同返回结构
+                    if hasattr(chunk, "content") and chunk.content:
+                        piece = chunk.content
+                    elif hasattr(chunk, "delta") and getattr(chunk, "delta"):
+                        piece = getattr(chunk, "delta")
+                    elif isinstance(chunk, str):
+                        piece = chunk
+                    if piece:
+                        yield piece
+                return
+            except Exception as e:
+                logger.error(f"astream failed, fallback to non-stream: {e}")
+        # 回退：一次性生成，再切片输出
+        text = await self.generate_text(prompt, **kwargs)
+        step = 32
+        for i in range(0, len(text), step):
+            yield text[i:i+step]
     
     async def chat_completion(self, messages, **kwargs) -> str:
         """聊天完成"""
@@ -300,6 +327,10 @@ class LangChainManager:
         logger.info(f"Settings object: {settings}")
         logger.info(f"AI model config: {settings.ai_model}")
         logger.info(f"Default model: {settings.ai_model.get('default_model') if settings.ai_model else 'None'}")
+
+        # 兼容空字符串：统一回退到 None 以使用默认模型
+        if model_name is not None and isinstance(model_name, str) and model_name.strip() == "":
+            model_name = None
 
         if model_name is None:
             try:
@@ -459,6 +490,36 @@ class LangChainManager:
         if service:
             return await service.generate_text(prompt, **kwargs)
         return f"No service available for text generation"
+
+    async def generate_text_stream(
+        self,
+        prompt: str,
+        model_name: Optional[str] = None,
+        service_name: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        直接流式生成文本的便捷方法（异步生成器）。
+        优先使用 model_name，其次 service_name，最后默认服务。
+        """
+        svc = None
+        if model_name is not None:
+            svc = self.get_service(model_name)
+        elif service_name is not None:
+            svc = self.get_service(service_name)
+        else:
+            svc = self.get_default_service()
+
+        if svc and hasattr(svc, "generate_text_stream"):
+            async for piece in svc.generate_text_stream(prompt, **kwargs):
+                yield piece
+            return
+
+        # 回退：一次性生成，再切片输出
+        text = await self.generate_text(prompt, service_name=model_name or service_name, **kwargs)
+        step = 32
+        for i in range(0, len(text), step):
+            yield text[i:i+step]
     
     async def chat_completion(self, messages: list, service_name: Optional[str] = None, **kwargs) -> str:
         """聊天完成的便捷方法"""

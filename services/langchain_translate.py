@@ -3,7 +3,7 @@
 """
 基于LangChain的翻译和总结服务
 """
-from logging import Logger
+import logging
 from typing import Optional, Dict, Any
 from prompt.templates import (
     TranslationPromptType, 
@@ -11,6 +11,9 @@ from prompt.templates import (
     prompt_manager
 )
 from services.langchain_service import LangChainManager
+
+# 创建日志记录器
+logger = logging.getLogger(__name__)
 
 
 class LangChainTranslationService:
@@ -22,6 +25,8 @@ class LangChainTranslationService:
         self.langchain_manager = LangChainManager()
         self.prompt_manager = prompt_manager
         
+        logger.info(f"Initializing LangChainTranslationService with model: {model_name}, use_chains: {use_chains}")
+        
         # 预创建常用的链
         if use_chains:
             self._initialize_chains()
@@ -29,6 +34,8 @@ class LangChainTranslationService:
     def _initialize_chains(self):
         """初始化常用的LangChain链"""
         try:
+            logger.info("Initializing LangChain chains...")
+            
             # 创建翻译链
             zh_en_template = self.prompt_manager.get_translation_prompt(
                 TranslationPromptType.ZH_TO_EN, 
@@ -39,6 +46,7 @@ class LangChainTranslationService:
                 zh_en_template, 
                 self.model_name
             )
+            logger.debug("Created zh_to_en_chain")
             
             en_zh_template = self.prompt_manager.get_translation_prompt(
                 TranslationPromptType.EN_TO_ZH, 
@@ -49,6 +57,7 @@ class LangChainTranslationService:
                 en_zh_template, 
                 self.model_name
             )
+            logger.debug("Created en_to_zh_chain")
             
             auto_translate_template = self.prompt_manager.get_translation_prompt(
                 TranslationPromptType.AUTO_TRANSLATE, 
@@ -93,8 +102,10 @@ class LangChainTranslationService:
                 structured_summary_template, 
                 self.model_name
             )
+            logger.info("All chains initialized successfully")
             
         except Exception as e:
+            logger.error(f"Failed to initialize some chains: {e}")
             print(f"Warning: Failed to initialize some chains: {e}")
     
     async def translate(self, text: str, target_language: str, source_language: Optional[str] = None, context: Optional[str] = None, **kwargs) -> str:
@@ -110,6 +121,7 @@ class LangChainTranslationService:
         Returns:
             翻译结果
         """
+        logger.info(f"Starting translation: {len(text)} chars, target: {target_language}, source: {source_language}")
         try:
             # 根据目标语言选择合适的翻译方法
             if target_language in ["中文", "中", "zh", "chinese"]:
@@ -126,14 +138,17 @@ class LangChainTranslationService:
                     **kwargs
                 )
         except Exception as e:
+            logger.error(f"Translation error: {e}")
             print(f"Translation error: {e}")
             # 降级到简单翻译
             return f"Translation failed: {str(e)}"
     
     async def zh2en(self, text: str, context: Optional[str] = None, **kwargs) -> str:
         """中文翻译成英文"""
+        logger.info(f"Starting zh2en translation: {len(text)} characters")
         try:
             if self.use_chains and self.langchain_manager.get_chain("zh_to_en_chain"):
+                logger.debug("Using zh_to_en_chain for translation")
                 # 使用预创建的链
                 chain_inputs = {"text": text}
                 if context:
@@ -145,6 +160,7 @@ class LangChainTranslationService:
                     self.model_name
                 )
             else:
+                logger.debug("Using direct prompt translation")
                 # 直接调用LangChain服务
                 prompt = self.prompt_manager.get_translation_prompt(
                     TranslationPromptType.ZH_TO_EN,
@@ -156,40 +172,45 @@ class LangChainTranslationService:
                     **kwargs
                 )
             
+            logger.info(f"zh2en translation completed successfully")
             return result.strip()
             
         except Exception as e:
+            logger.error(f"zh2en translation failed: {e}")
             return f"Translation failed: {str(e)}"
     
     async def en2zh(self, text: str, context: Optional[str] = None, **kwargs) -> str:
         """英文翻译成中文"""
+        logger.info(f"Starting en2zh translation: {len(text)} characters")
         try:
             if self.use_chains and self.langchain_manager.get_chain("en_to_zh_chain"):
+                logger.debug("Using en_to_zh_chain for translation")
                 chain_inputs = {"text": text}
                 if context:
                     chain_inputs["context"] = context
-
-
+                    
                 result = await self.langchain_manager.run_chain(
                     "en_to_zh_chain",
                     chain_inputs,
                     self.model_name
                 )
             else:
+                logger.debug("Using direct prompt translation")
                 prompt = self.prompt_manager.get_translation_prompt(
                     TranslationPromptType.EN_TO_ZH,
                     text=text
                 )
-
                 result = await self.langchain_manager.generate_text(
                     prompt, 
                     service_name=self.model_name,
                     **kwargs
                 )
             
+            logger.info(f"en2zh translation completed successfully")
             return result.strip()
             
         except Exception as e:
+            logger.error(f"en2zh translation failed: {e}")
             return f"Translation failed: {str(e)}"
     
     async def auto_translate(self, text: str, target_language: Optional[str] = None, source_language: Optional[str] = None, context: Optional[str] = None, **kwargs) -> str:

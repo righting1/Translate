@@ -1,4 +1,14 @@
 from typing import Optional, Dict, Any
+import logging
+from utils.exceptions import (
+    EmptyTextError,
+    ModelAPIError,
+    ModelNotAvailableError,
+    TranslateAPIException
+)
+
+logger = logging.getLogger(__name__)
+
 # 延迟导入以避免循环导入问题
 # from services.ai_model import ai_model_manager  
 # from prompt.templates import prompt_manager
@@ -27,8 +37,12 @@ class TranslationService:
 
     async def zh2en(self, text: str, **kwargs) -> str:
         """中文翻译成英文"""
+        if not text or not text.strip():
+            raise EmptyTextError()
+        
+        from prompt.templates import TranslationPromptType
+        
         try:
-            from prompt.templates import TranslationPromptType
             # 获取翻译提示词（使用枚举类型安全）
             prompt = self.prompt_manager.get_translation_prompt(
                 TranslationPromptType.ZH_TO_EN,
@@ -43,15 +57,21 @@ class TranslationService:
             )
             
             return result.strip()
-            
+        except (ModelAPIError, ModelNotAvailableError, TranslateAPIException):
+            # 重新抛出我们的自定义异常
+            raise
         except Exception as e:
-            # 如果AI调用失败，返回错误信息或降级处理
-            return f"Translation failed: {str(e)}"
+            logger.exception(f"Unexpected error in zh2en translation: {e}")
+            raise ModelAPIError(f"Translation failed: {str(e)}", self.model_name, e)
 
     async def en2zh(self, text: str, **kwargs) -> str:
         """英文翻译成中文"""
+        if not text or not text.strip():
+            raise EmptyTextError()
+        
+        from prompt.templates import TranslationPromptType
+        
         try:
-            from prompt.templates import TranslationPromptType
             # 获取翻译提示词（使用枚举类型安全）
             prompt = self.prompt_manager.get_translation_prompt(
                 TranslationPromptType.EN_TO_ZH,
@@ -66,9 +86,11 @@ class TranslationService:
             )
             
             return result.strip()
-            
+        except (ModelAPIError, ModelNotAvailableError, TranslateAPIException):
+            raise
         except Exception as e:
-            return f"Translation failed: {str(e)}"
+            logger.exception(f"Unexpected error in en2zh translation: {e}")
+            raise ModelAPIError(f"Translation failed: {str(e)}", self.model_name, e)
 
     async def auto_translate(self, text: str, **kwargs) -> str:
         """自动检测语言并翻译"""

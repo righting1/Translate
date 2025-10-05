@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-��־����ģ��
-�ṩͳһ����־���ú͹���
+日志配置模块
+提供统一的日志配置和管理
 """
 import logging
 import logging.config
@@ -16,18 +16,18 @@ def setup_logging(
     format_string: Optional[str] = None
 ) -> None:
     """
-    ������Ŀ��־����
+    设置项目日志配置
     
     Args:
-        level: ��־���� (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_file: ��־�ļ�·���������������ֻ���������̨
-        format_string: �Զ�����־��ʽ
+        level: 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_file: 日志文件路径，如果不设置则只输出到控制台
+        format_string: 自定义日志格式
     """
-    # Ĭ����־��ʽ
+    # 默认日志格式
     if format_string is None:
         format_string = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     
-    # ������־�����ֵ�
+    # 创建日志配置字典
     config = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -58,9 +58,9 @@ def setup_logging(
         }
     }
     
-    # ���ָ������־�ļ��������ļ�������
+    # 如果指定了日志文件，添加文件处理器
     if log_file:
-        # ȷ����־Ŀ¼����
+        # 确保日志目录存在
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         
@@ -74,25 +74,25 @@ def setup_logging(
             'encoding': 'utf-8'
         }
         
-        # ���ļ����������ӵ�����¼��
+        # 将文件处理器添加到根记录器
         config['loggers']['']['handlers'].append('file')
     
-    # Ӧ����־����
+    # 应用日志配置
     logging.config.dictConfig(config)
 
 def get_logger(name: str) -> logging.Logger:
     """
-    ��ȡ��־��¼��
+    获取日志记录器
     
     Args:
-        name: ��¼�����ƣ�ͨ��ʹ�� __name__
+        name: 记录器名称，通常使用 __name__
         
     Returns:
-        ���úõ���־��¼��
+        配置好的日志记录器
     """
     return logging.getLogger(name)
 
-# ��Ŀ��־����ӳ��
+# 项目日志级别映射
 LOG_LEVELS = {
     'DEBUG': logging.DEBUG,
     'INFO': logging.INFO, 
@@ -101,20 +101,20 @@ LOG_LEVELS = {
     'CRITICAL': logging.CRITICAL
 }
 
-# ʾ��ʹ�÷���
+# 示例使用方法
 if __name__ == "__main__":
-    # ������־����
+    # 设置日志配置
     setup_logging(
         level="DEBUG",
         log_file="logs/app.log"
     )
     
-    # ��ȡ��־��¼��
+    # 获取日志记录器
     logger = get_logger(__name__)
     
-    # ʹ��ʾ��
-    logger.debug("����һ��������Ϣ")
-    logger.info("����һ����Ϣ")
-    logger.warning("����һ������")
-    logger.error("����һ������")
-    logger.critical("����һ�����ش���")
+    # 使用示例
+    logger.debug("这是一个调试信息")
+    logger.info("这是一个信息")
+    logger.warning("这是一个警告")
+    logger.error("这是一个错误")
+    logger.critical("这是一个严重错误")

@@ -13,7 +13,7 @@ from schemas.translate import (
 from services.translate import TranslationService
 from services.langchain_translate import LangChainTranslationService
 from services.async_task_manager import task_manager, TaskType, TaskStatus
-from schemas.translate import FeatureCode
+from schemas.translate import FeatureCode, Endpoint, HttpMethod, FeatureName, FeatureDescription, ValidatePromptRequest
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,12 @@ def get_translation_service(req: TranslateRequest) -> TranslationService:
     return TranslationService(model_name=req.model)
 
 
-def get_simple_translation_service(model: Optional[str] = None) -> TranslationService:
-    return TranslationService(model_name=model)
+def get_simple_translation_service() -> TranslationService:
+    return TranslationService()
 
 
-def get_langchain_service(model: Optional[str] = None, use_chains: bool = True) -> LangChainTranslationService:
-    return LangChainTranslationService(model_name=model, use_chains=use_chains)
+def get_langchain_service() -> LangChainTranslationService:
+    return LangChainTranslationService()
 
 
 #根据参数选择要执行的任务
@@ -76,12 +76,37 @@ async def run_translate(
 @router.get("/features", response_model=FeatureListResponse)
 async def list_features() -> FeatureListResponse:
     features = [
-        Feature(code=FeatureCode.zh2en, name="中译英", description="将中文翻译为英文"),
-        Feature(code=FeatureCode.en2zh, name="英译中", description="将英文翻译为中文"),
-        Feature(code=FeatureCode.summarize, name="总结摘要", description="对输入文本进行简要总结"),
-        Feature(code=FeatureCode.auto_translate, name="自动翻译", description="自动检测语言并翻译"),
-        Feature(code=FeatureCode.keyword_summary, name="关键词总结", description="提取关键词并总结"),
-        Feature(code=FeatureCode.structured_summary, name="结构化总结", description="按结构化格式总结"),
+        # 基础同步功能
+    Feature(code=FeatureCode.en2zh, name=FeatureName.EN2ZH, description=FeatureDescription.EN2ZH, url=Endpoint.TRANSLATE_EN2ZH, method=HttpMethod.POST),
+    Feature(code=FeatureCode.summarize, name=FeatureName.SUMMARIZE, description=FeatureDescription.SUMMARIZE, url=Endpoint.TRANSLATE_SUMMARIZE, method=HttpMethod.POST),
+    Feature(code=FeatureCode.auto_translate, name=FeatureName.AUTO_TRANSLATE, description=FeatureDescription.AUTO_TRANSLATE, url=Endpoint.TRANSLATE_AUTO, method=HttpMethod.POST),
+    Feature(code=FeatureCode.keyword_summary, name=FeatureName.KEYWORD_SUMMARY, description=FeatureDescription.KEYWORD_SUMMARY, url=Endpoint.TRANSLATE_KEYWORD_SUMMARY, method=HttpMethod.POST),
+    Feature(code=FeatureCode.structured_summary, name=FeatureName.STRUCTURED_SUMMARY, description=FeatureDescription.STRUCTURED_SUMMARY, url=Endpoint.TRANSLATE_STRUCTURED_SUMMARY, method=HttpMethod.POST),
+
+        # LangChain 功能
+    Feature(code=FeatureCode.langchain_translate, name=FeatureName.LC_TRANSLATE, description=FeatureDescription.LC_TRANSLATE, url=Endpoint.LC_TRANSLATE, method=HttpMethod.POST),
+    Feature(code=FeatureCode.langchain_zh2en, name=FeatureName.LC_ZH2EN, description=FeatureDescription.LC_ZH2EN, url=Endpoint.LC_ZH2EN, method=HttpMethod.POST),
+    Feature(code=FeatureCode.langchain_en2zh, name=FeatureName.LC_EN2ZH, description=FeatureDescription.LC_EN2ZH, url=Endpoint.LC_EN2ZH, method=HttpMethod.POST),
+    Feature(code=FeatureCode.langchain_summarize, name=FeatureName.LC_SUMMARIZE, description=FeatureDescription.LC_SUMMARIZE, url=Endpoint.LC_SUMMARIZE, method=HttpMethod.POST),
+
+        # 异步任务功能
+    Feature(code=FeatureCode.async_zh2en, name=FeatureName.ASYNC_ZH2EN, description=FeatureDescription.ASYNC_ZH2EN, url=Endpoint.ASYNC_ZH2EN, method=HttpMethod.POST),
+    Feature(code=FeatureCode.async_en2zh, name=FeatureName.ASYNC_EN2ZH, description=FeatureDescription.ASYNC_EN2ZH, url=Endpoint.ASYNC_EN2ZH, method=HttpMethod.POST),
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_SUMMARIZE, description=FeatureDescription.ASYNC_SUMMARIZE, url=Endpoint.ASYNC_SUMMARIZE, method=HttpMethod.POST),
+    Feature(code=FeatureCode.async_keyword_summary, name=FeatureName.ASYNC_KEYWORD_SUMMARY, description=FeatureDescription.ASYNC_KEYWORD_SUMMARY, url=Endpoint.ASYNC_KEYWORD_SUMMARY, method=HttpMethod.POST),
+    Feature(code=FeatureCode.async_structured_summary, name=FeatureName.ASYNC_STRUCTURED_SUMMARY, description=FeatureDescription.ASYNC_STRUCTURED_SUMMARY, url=Endpoint.ASYNC_STRUCTURED_SUMMARY, method=HttpMethod.POST),
+
+        # 异步任务管理附属接口（非功能任务本身，可用于前端集成展示）
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_STATUS, description=FeatureDescription.ASYNC_STATUS, url=Endpoint.ASYNC_STATUS, method=HttpMethod.GET),
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_RESULT, description=FeatureDescription.ASYNC_RESULT, url=Endpoint.ASYNC_RESULT, method=HttpMethod.GET),
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_CANCEL, description=FeatureDescription.ASYNC_CANCEL, url=Endpoint.ASYNC_CANCEL, method=HttpMethod.DELETE),
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_TASKS, description=FeatureDescription.ASYNC_TASKS, url=Endpoint.ASYNC_TASKS, method=HttpMethod.GET),
+    Feature(code=FeatureCode.async_summarize, name=FeatureName.ASYNC_STATS, description=FeatureDescription.ASYNC_STATS, url=Endpoint.ASYNC_STATS, method=HttpMethod.GET),
+
+        # 流式返回（SSE）功能
+    Feature(code=FeatureCode.stream_zh2en, name=FeatureName.STREAM_ZH2EN, description=FeatureDescription.STREAM_ZH2EN, url=Endpoint.STREAM_ZH2EN, method=HttpMethod.POST),
+    Feature(code=FeatureCode.stream_en2zh, name=FeatureName.STREAM_EN2ZH, description=FeatureDescription.STREAM_EN2ZH, url=Endpoint.STREAM_EN2ZH, method=HttpMethod.POST),
+    Feature(code=FeatureCode.stream_summarize, name=FeatureName.STREAM_SUMMARIZE, description=FeatureDescription.STREAM_SUMMARIZE, url=Endpoint.STREAM_SUMMARIZE, method=HttpMethod.POST),
     ]
     return FeatureListResponse(features=features)
 
@@ -118,8 +143,6 @@ async def list_prompt_types():
 @router.post("/langchain/translate", response_model=TranslateResponse)
 async def langchain_translate(
     request: TranslateRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链"),
     service: LangChainTranslationService = Depends(get_langchain_service)
 ):
     """
@@ -127,10 +150,10 @@ async def langchain_translate(
     支持链式调用和对话上下文管理
     """
     try:
-        if hasattr(service, 'model_name') and model:
-            service.model_name = model
+        if hasattr(service, 'model_name') and request.model:
+            service.model_name = request.model
         if hasattr(service, 'use_chains'):
-            service.use_chains = use_chains
+            service.use_chains = True
             
         result = await service.translate(
             text=request.text,
@@ -152,18 +175,16 @@ async def langchain_translate(
 @router.post("/langchain/zh2en", response_model=TranslateResponse)
 async def langchain_translate_zh2en(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链"),
     service: LangChainTranslationService = Depends(get_langchain_service)
 ) -> TranslateResponse:
     """
     使用LangChain框架将中文翻译成英文
     """
     try:
-        if hasattr(service, 'model_name') and model:
-            service.model_name = model
+        if hasattr(service, 'model_name') and getattr(req, 'model', None):
+            service.model_name = req.model
         if hasattr(service, 'use_chains'):
-            service.use_chains = use_chains
+            service.use_chains = True
             
         result = await service.zh2en(req.text)
         return TranslateResponse(
@@ -171,7 +192,7 @@ async def langchain_translate_zh2en(
             translated_text=result,
             target_language="英文",
             source_language="中文",
-            model=model or "langchain_default"
+            model=req.model or "langchain_default"
         )
     except Exception as e:
         logger.error(f"LangChain zh2en translation error: {e}")
@@ -181,18 +202,16 @@ async def langchain_translate_zh2en(
 @router.post("/langchain/en2zh", response_model=TranslateResponse)
 async def langchain_translate_en2zh(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链"),
     service: LangChainTranslationService = Depends(get_langchain_service)
 ) -> TranslateResponse:
     """
     使用LangChain框架将英文翻译成中文
     """
     try:
-        if hasattr(service, 'model_name') and model:
-            service.model_name = model
+        if hasattr(service, 'model_name') and getattr(req, 'model', None):
+            service.model_name = req.model
         if hasattr(service, 'use_chains'):
-            service.use_chains = use_chains
+            service.use_chains = True
             
         result = await service.en2zh(req.text)
         return TranslateResponse(
@@ -200,7 +219,7 @@ async def langchain_translate_en2zh(
             translated_text=result,
             target_language="中文",
             source_language="英文",
-            model=model or "langchain_default"
+            model=req.model or "langchain_default"
         )
     except Exception as e:
         logger.error(f"LangChain en2zh translation error: {e}")
@@ -210,8 +229,6 @@ async def langchain_translate_en2zh(
 @router.post("/langchain/summarize", response_model=SummarizeResponse)
 async def langchain_summarize(
     request: SummarizeRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链"),
     service: LangChainTranslationService = Depends(get_langchain_service)
 ):
     """
@@ -219,10 +236,10 @@ async def langchain_summarize(
     支持链式调用和上下文管理
     """
     try:
-        if hasattr(service, 'model_name') and model:
-            service.model_name = model
+        if hasattr(service, 'model_name') and request.model:
+            service.model_name = request.model
         if hasattr(service, 'use_chains'):
-            service.use_chains = use_chains
+            service.use_chains = True
             
         result = await service.summarize(
             text=request.text,
@@ -278,11 +295,11 @@ async def clear_chain_memory(
 
 
 @router.post("/validate-prompt")
-async def validate_prompt_type(category: str, prompt_type: str):
-    """验证提示词类型是否有效"""
+async def validate_prompt_type(req: ValidatePromptRequest):
+    """验证提示词类型是否有效（JSON Body: { category, prompt_type }）"""
     try:
         from prompt.utils import prompt_validator
-        result = prompt_validator.validate_prompt_request(category, prompt_type)
+        result = prompt_validator.validate_prompt_request(req.category, req.prompt_type)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Validation error: {str(e)}")
@@ -291,11 +308,10 @@ async def validate_prompt_type(category: str, prompt_type: str):
 @router.post("/zh2en", response_model=TranslateResponse)
 async def translate_zh2en(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
     # 使用查询参数中的模型或请求体中的模型
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     if actual_model:
         service = TranslationService(model_name=actual_model)
     
@@ -312,10 +328,9 @@ async def translate_zh2en(
 @router.post("/en2zh", response_model=TranslateResponse)
 async def translate_en2zh(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     logger.info(actual_model)
     if actual_model:
         service = TranslationService(model_name=actual_model)
@@ -333,11 +348,10 @@ async def translate_en2zh(
 @router.post("/auto", response_model=TranslateResponse)
 async def auto_translate(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
     """自动检测语言并翻译"""
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     if actual_model:
         service = TranslationService(model_name=actual_model)
     
@@ -354,11 +368,10 @@ async def auto_translate(
 @router.post("/summarize", response_model=TranslateResponse)
 async def translate_summarize(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     max_length: int = Query(200, description="总结最大长度"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     if actual_model:
         service = TranslationService(model_name=actual_model)
     
@@ -375,12 +388,11 @@ async def translate_summarize(
 @router.post("/keyword-summary", response_model=TranslateResponse)
 async def keyword_summary(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     summary_length: int = Query(100, description="总结长度"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
     """关键词提取总结"""
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     if actual_model:
         service = TranslationService(model_name=actual_model)
     
@@ -397,12 +409,11 @@ async def keyword_summary(
 @router.post("/structured-summary", response_model=TranslateResponse)
 async def structured_summary(
     req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
     max_length: int = Query(300, description="总结最大长度"),
     service: TranslationService = Depends(get_simple_translation_service),
 ) -> TranslateResponse:
     """结构化总结"""
-    actual_model = model or getattr(req, 'model', None)
+    actual_model = getattr(req, 'model', None)
     if actual_model:
         service = TranslationService(model_name=actual_model)
     
@@ -414,269 +425,5 @@ async def structured_summary(
         source_language="原文",
         model=actual_model or "default"
     )
-
-
-# ============== 异步任务 API 端点 ==============
-
-@router.post("/async/zh2en")
-async def submit_async_zh2en_task(
-    req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链")
-):
-    """
-    提交异步中译英任务
-    返回任务ID，客户端可使用此ID轮询结果
-    """
-    try:
-        task_id = task_manager.create_task(
-            task_type=TaskType.ZH2EN,
-            input_data={"text": req.text},
-            model_name=model,
-            use_chains=use_chains
-        )
-        
-        return {
-            "task_id": task_id,
-            "status": "submitted",
-            "message": "Task submitted successfully",
-            "poll_url": f"/api/translate/async/status/{task_id}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to submit zh2en task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/async/en2zh")
-async def submit_async_en2zh_task(
-    req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    use_chains: bool = Query(True, description="是否使用预构建的链")
-):
-    """
-    提交异步英译中任务
-    返回任务ID，客户端可使用此ID轮询结果
-    """
-    try:
-        task_id = task_manager.create_task(
-            task_type=TaskType.EN2ZH,
-            input_data={"text": req.text},
-            model_name=model,
-            use_chains=use_chains
-        )
-        
-        return {
-            "task_id": task_id,
-            "status": "submitted",
-            "message": "Task submitted successfully",
-            "poll_url": f"/api/translate/async/status/{task_id}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to submit en2zh task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/async/summarize")
-async def submit_async_summarize_task(
-    req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    max_length: int = Query(200, description="总结最大长度"),
-    use_chains: bool = Query(True, description="是否使用预构建的链")
-):
-    """
-    提交异步总结任务
-    返回任务ID，客户端可使用此ID轮询结果
-    """
-    try:
-        task_id = task_manager.create_task(
-            task_type=TaskType.SUMMARIZE,
-            input_data={"text": req.text, "max_length": max_length},
-            model_name=model,
-            use_chains=use_chains
-        )
-        
-        return {
-            "task_id": task_id,
-            "status": "submitted",
-            "message": "Task submitted successfully",
-            "poll_url": f"/api/translate/async/status/{task_id}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to submit summarize task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/async/keyword-summary")
-async def submit_async_keyword_summary_task(
-    req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    summary_length: int = Query(100, description="总结长度"),
-    use_chains: bool = Query(True, description="是否使用预构建的链")
-):
-    """
-    提交异步关键词总结任务
-    """
-    try:
-        task_id = task_manager.create_task(
-            task_type=TaskType.KEYWORD_SUMMARY,
-            input_data={"text": req.text, "summary_length": summary_length},
-            model_name=model,
-            use_chains=use_chains
-        )
-        
-        return {
-            "task_id": task_id,
-            "status": "submitted",
-            "message": "Task submitted successfully",
-            "poll_url": f"/api/translate/async/status/{task_id}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to submit keyword summary task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/async/structured-summary")
-async def submit_async_structured_summary_task(
-    req: SimpleTextRequest,
-    model: Optional[str] = Query(None, description="AI模型名称"),
-    max_length: int = Query(300, description="总结最大长度"),
-    use_chains: bool = Query(True, description="是否使用预构建的链")
-):
-    """
-    提交异步结构化总结任务
-    """
-    try:
-        task_id = task_manager.create_task(
-            task_type=TaskType.STRUCTURED_SUMMARY,
-            input_data={"text": req.text, "max_length": max_length},
-            model_name=model,
-            use_chains=use_chains
-        )
-        
-        return {
-            "task_id": task_id,
-            "status": "submitted",
-            "message": "Task submitted successfully",
-            "poll_url": f"/api/translate/async/status/{task_id}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to submit structured summary task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/async/status/{task_id}")
-async def get_task_status(task_id: str):
-    """
-    获取任务状态
-    用于轮询任务进度和结果
-    """
-    task_status = task_manager.get_task_status(task_id)
-    
-    if not task_status:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    return task_status
-
-
-@router.get("/async/result/{task_id}")
-async def get_task_result(task_id: str):
-    """
-    获取任务结果
-    仅返回已完成任务的结果
-    """
-    result = task_manager.get_task_result(task_id)
-    
-    if not result:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    return result
-
-
-@router.delete("/async/cancel/{task_id}")
-async def cancel_task(task_id: str):
-    """
-    取消正在执行的任务
-    """
-    success = task_manager.cancel_task(task_id)
-    
-    if not success:
-        raise HTTPException(status_code=404, detail="Task not found or cannot be cancelled")
-    
-    return {"message": f"Task {task_id} has been cancelled"}
-
-
-@router.get("/async/tasks")
-async def list_tasks(
-    status: Optional[str] = Query(None, description="过滤任务状态 (pending, running, completed, failed, expired)"),
-    limit: int = Query(50, description="返回任务数量限制")
-):
-    """
-    列出所有任务
-    支持按状态过滤
-    """
-    try:
-        # 转换状态参数
-        filter_status = None
-        if status:
-            try:
-                filter_status = TaskStatus(status.lower())
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-        
-        tasks = task_manager.list_tasks(status=filter_status)
-        
-        # 限制返回数量
-        if limit > 0:
-            tasks = tasks[:limit]
-        
-        return {
-            "tasks": tasks,
-            "total": len(tasks),
-            "filtered_by": status
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to list tasks: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/async/stats")
-async def get_async_stats():
-    """
-    获取异步任务系统统计信息
-    """
-    try:
-        all_tasks = task_manager.list_tasks()
-        
-        stats = {
-            "total_tasks": len(all_tasks),
-            "by_status": {},
-            "by_type": {},
-            "system_info": {
-                "max_concurrent_tasks": task_manager.max_concurrent_tasks,
-                "active_tasks": len([t for t in all_tasks if t["status"] == "running"])
-            }
-        }
-        
-        # 按状态统计
-        for task in all_tasks:
-            status = task["status"]
-            stats["by_status"][status] = stats["by_status"].get(status, 0) + 1
-        
-        # 按类型统计
-        for task in all_tasks:
-            task_type = task["task_type"]
-            stats["by_type"][task_type] = stats["by_type"].get(task_type, 0) + 1
-        
-        return stats
-        
-    except Exception as e:
-        logger.error(f"Failed to get async stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
