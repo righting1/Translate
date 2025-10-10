@@ -1,10 +1,10 @@
 """
-²âÊÔÒì³£´¦Àí»úÖÆ
+æµ‹è¯•å¼‚å¸¸å¤„ç†æœºåˆ¶
 """
 import pytest
 from fastapi.testclient import TestClient
-from main import app
-from utils.exceptions import (
+from app.main import app
+from app.utils.exceptions import (
     EmptyTextError,
     TaskNotFoundException,
     ModelNotAvailableError,
@@ -16,107 +16,106 @@ client = TestClient(app)
 
 
 def test_empty_text_error():
-    """²âÊÔ¿ÕÎÄ±¾´íÎó"""
-    # ²âÊÔ¿Õ×Ö·û´®
-    response = client.post("/api/translate/zh2en", json={"text": ""})
-    assert response.status_code == 400
-    assert "empty" in response.json()["error"].lower()
-    
-    # ²âÊÔÖ»ÓĞ¿Õ¸ñµÄÎÄ±¾
-    response = client.post("/api/translate/zh2en", json={"text": "   "})
+    """æµ‹è¯•ç©ºæ–‡æœ¬é”™è¯¯"""
+    # æµ‹è¯•ç©ºå­—ç¬¦ä¸² - PydanticéªŒè¯ä¼šè¿”å›422é”™è¯¯
+    response = client.post("/api/translate/run", json={"text": "", "task": "zh2en"})
+    assert response.status_code == 422  # Pydantic validation error
+
+    # æµ‹è¯•åªæœ‰ç©ºæ ¼çš„æ–‡æœ¬ - åº”ç”¨è‡ªå®šä¹‰éªŒè¯ä¼šè¿”å›400é”™è¯¯
+    response = client.post("/api/translate/run", json={"text": "   ", "task": "zh2en"})
     assert response.status_code == 400
 
 
 def test_task_not_found():
-    """²âÊÔÈÎÎñÎ´ÕÒµ½´íÎó"""
+    """æµ‹è¯•ä»»åŠ¡æœªæ‰¾åˆ°é”™è¯¯"""
     response = client.get("/api/translate/async/status/non-existent-task-id")
     assert response.status_code == 404
     assert "not found" in response.json()["error"].lower()
 
 
 def test_validation_error():
-    """²âÊÔÇëÇóÑéÖ¤´íÎó"""
-    # È±ÉÙ±ØĞè×Ö¶Î
+    """æµ‹è¯•è¯·æ±‚éªŒè¯é”™è¯¯"""
+    # ç¼ºå°‘å¿…éœ€å­—æ®µ
     response = client.post("/api/translate/zh2en", json={})
     assert response.status_code == 422
     assert "validation" in response.json()["error"].lower()
     
-    # ×Ö¶ÎÀàĞÍ´íÎó
+    # å­—æ®µç±»å‹é”™è¯¯
     response = client.post("/api/translate/zh2en", json={"text": 123})
     assert response.status_code == 422
 
 
 def test_model_api_error_handling():
-    """²âÊÔÄ£ĞÍAPI´íÎó´¦Àí"""
-    # Ê¹ÓÃ²»´æÔÚµÄÄ£ĞÍ
+    """æµ‹è¯•æ¨¡å‹APIé”™è¯¯å¤„ç†"""
+    # ä½¿ç”¨ä¸å­˜åœ¨çš„æ¨¡å‹
     response = client.post(
-        "/api/translate/zh2en",
-        json={"text": "²âÊÔÎÄ±¾", "model": "non-existent-model"}
+        "/api/translate/run",
+        json={"text": "æµ‹è¯•æ–‡æœ¬", "task": "zh2en", "model": "non-existent-model"}
     )
-    # Ó¦¸Ã·µ»Ø´íÎóÏìÓ¦£¨¾ßÌå×´Ì¬ÂëÈ¡¾öÓÚÊµÏÖ£©
+    # åº”è¯¥è¿”å›é”™è¯¯å“åº”
     assert response.status_code in [400, 404, 500, 502, 503]
 
 
 def test_async_task_submission():
-    """²âÊÔÒì²½ÈÎÎñÌá½»µÄ´íÎó´¦Àí"""
-    # Õı³£Ìá½»
+    """æµ‹è¯•å¼‚æ­¥ä»»åŠ¡æäº¤çš„é”™è¯¯å¤„ç†"""
+    # æ­£å¸¸æäº¤
     response = client.post(
         "/api/translate/async/zh2en",
-        json={"text": "²âÊÔÎÄ±¾"}
+        json={"text": "æµ‹è¯•æ–‡æœ¬"}
     )
     assert response.status_code == 200
     assert "task_id" in response.json()
     
-    # ¿ÕÎÄ±¾Ìá½»
+    # ç©ºæ–‡æœ¬æäº¤ - PydanticéªŒè¯ä¼šè¿”å›422é”™è¯¯
     response = client.post(
         "/api/translate/async/zh2en",
         json={"text": ""}
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_error_response_structure():
-    """²âÊÔ´íÎóÏìÓ¦µÄ±ê×¼½á¹¹"""
+    """æµ‹è¯•é”™è¯¯å“åº”çš„æ ‡å‡†ç»“æ„"""
     response = client.get("/api/translate/async/status/invalid-id")
     assert response.status_code == 404
     
     data = response.json()
-    # ÑéÖ¤ÏìÓ¦°üº¬±ØĞè×Ö¶Î
+    # éªŒè¯å“åº”åŒ…å«å¿…éœ€å­—æ®µ
     assert "error" in data
     assert "status_code" in data
     assert "details" in data
     assert "path" in data
     
-    # ÑéÖ¤×´Ì¬ÂëÒ»ÖÂĞÔ
+    # éªŒè¯çŠ¶æ€ç ä¸€è‡´æ€§
     assert data["status_code"] == 404
 
 
 def test_exception_details():
-    """²âÊÔÒì³£ÏêÇéĞÅÏ¢"""
+    """æµ‹è¯•å¼‚å¸¸è¯¦æƒ…ä¿¡æ¯"""
     response = client.get("/api/translate/async/status/test-task-123")
     assert response.status_code == 404
     
     data = response.json()
-    # ÑéÖ¤°üº¬ÈÎÎñIDÏêÇé
+    # éªŒè¯åŒ…å«ä»»åŠ¡IDè¯¦æƒ…
     assert "details" in data
     if "task_id" in data["details"]:
         assert data["details"]["task_id"] == "test-task-123"
 
 
 def test_chain_not_found_error():
-    """²âÊÔÁ´Î´ÕÒµ½´íÎó"""
+    """æµ‹è¯•é“¾æœªæ‰¾åˆ°é”™è¯¯"""
     response = client.post("/api/translate/langchain/chains/inspect/non-existent-chain")
-    # Ó¦¸Ã·µ»Ø404»òÆäËûÊÊµ±µÄ´íÎó
+    # åº”è¯¥è¿”å›404æˆ–å…¶ä»–é€‚å½“çš„é”™è¯¯
     assert response.status_code in [404, 500]
 
 
 def test_validate_prompt_with_invalid_data():
-    """²âÊÔÌáÊ¾´ÊÑéÖ¤µÄ´íÎó´¦Àí"""
+    """æµ‹è¯•æç¤ºè¯éªŒè¯çš„é”™è¯¯å¤„ç†"""
     response = client.post(
         "/api/translate/validate-prompt",
         json={"category": "invalid", "prompt_type": "invalid"}
     )
-    # Ó¦¸Ã·µ»Ø´íÎóÏìÓ¦
+    # åº”è¯¥è¿”å›é”™è¯¯å“åº”
     assert response.status_code in [400, 404, 422]
 
 

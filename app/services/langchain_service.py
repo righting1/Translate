@@ -19,11 +19,16 @@ try:
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     LANGCHAIN_AVAILABLE = False
-    print("Warning: LangChain not available. Using mock services.")
 
 from ..core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# 如果 LangChain 不可用，记录警告
+if not LANGCHAIN_AVAILABLE:
+    logger.warning("LangChain not available. Using mock services.")
+
+
 class LangChainModelType(Enum):
     """LangChain支持的模型类型"""
     OPENAI = "openai"
@@ -55,7 +60,7 @@ class BaseLangChainService:
             try:
                 self._initialize_llm()
             except Exception as e:
-                print(f"Warning: Failed to initialize LLM for {self.model_name}: {e}")
+                logger.warning(f"Failed to initialize LLM for {self.model_name}: {e}")
         else:
             self.memory = {"messages": []}
     
@@ -73,14 +78,15 @@ class BaseLangChainService:
             service_type = self.service_type.lower()
             
             if service_type in ["openai", "azure_openai"]:
-                api_key = self.config.get("api_key") or os.getenv("OPENAI_API_KEY")
+                api_key = self.config.get("api_key") or settings.openai_api_key or os.getenv("OPENAI_API_KEY")
+                base_url = self.config.get("base_url") or settings.openai_base_url
                 if api_key:
                     logger.info(f"Creating OpenAI LLM with model: {self.config.get('model', 'gpt-3.5-turbo')}")
                     try:
                         self.llm = ChatOpenAI(
                             model=self.config.get("model", "gpt-3.5-turbo"),
                             api_key=api_key,
-                            base_url=self.config.get("base_url"),
+                            base_url=base_url,
                             temperature=self.config.get("temperature", 0.7),
                             max_tokens=self.config.get("max_tokens", 2000),
                             timeout=self.config.get("timeout", 60)
@@ -95,7 +101,7 @@ class BaseLangChainService:
             elif service_type == "dashscope":
                 # DashScope集成
                 logger.info("Setting up DashScope LLM")
-                api_key = self.config.get("api_key") or os.getenv("DASHSCOPE_API_KEY")
+                api_key = self.config.get("api_key") or settings.dashscope_api_key or os.getenv("DASHSCOPE_API_KEY")
                 if api_key:
                     logger.info("DashScope API key found, creating LLM instance")
                     try:
@@ -251,7 +257,7 @@ class LangChainManager:
             ai_config = settings.ai_model
             
             if not ai_config:
-                print("Warning: No AI model configuration found")
+                logger.warning("No AI model configuration found")
                 return
                 
             # 遍历配置中的模型，跳过非模型配置项
@@ -263,7 +269,7 @@ class LangChainManager:
                     
                 # 确保 model_config 是字典类型
                 if not isinstance(model_config, dict):
-                    print(f"Warning: Invalid config for {model_name}: {type(model_config)}")
+                    logger.warning(f"Invalid config for {model_name}: {type(model_config)}")
                     continue
                 
                 # 默认启用所有配置的模型
@@ -273,9 +279,9 @@ class LangChainManager:
                         if service:
                             self.services[model_name] = service
                     except Exception as e:
-                        print(f"Warning: Failed to initialize {model_name} LangChain service: {e}")
+                        logger.warning(f"Failed to initialize {model_name} LangChain service: {e}")
         except Exception as e:
-            print(f"Warning: Failed to initialize LangChain services: {e}")
+            logger.warning(f"Failed to initialize LangChain services: {e}")
             # 创建一个默认服务
             self.services["default"] = self._create_default_service()
     
@@ -404,7 +410,7 @@ class LangChainManager:
             
             return chain
         except Exception as e:
-            print(f"Failed to create chain {chain_name}: {e}")
+            logger.error(f"Failed to create chain {chain_name}: {e}")
             return None
     
     def get_chain(self, chain_name: str):
@@ -426,7 +432,9 @@ class LangChainManager:
                 # 将输入转换为字符串提示
                 prompt_text = inputs.get('text', '') if isinstance(inputs, dict) else str(inputs)
                 return await service.generate_text(prompt_text)
-            return f"Chain '{chain_name}' not found and no service available"
+            
+            from ..utils.exceptions import ModelNotAvailableError
+            raise ModelNotAvailableError(f"Chain '{chain_name}' not found and no service available")
         
         try:
             if LANGCHAIN_AVAILABLE:
@@ -489,7 +497,9 @@ class LangChainManager:
         service = self.get_service(service_name)
         if service:
             return await service.generate_text(prompt, **kwargs)
-        return f"No service available for text generation"
+        
+        from ..utils.exceptions import ModelNotAvailableError
+        raise ModelNotAvailableError(f"No service available for text generation. Requested service: {service_name}")
 
     async def generate_text_stream(
         self,
@@ -530,7 +540,9 @@ class LangChainManager:
             # 将消息转换为简单文本
             text = "\n".join([f"{msg.get('role', 'user')}: {msg.get('content', '')}" for msg in messages])
             return await service.generate_text(text, **kwargs)
-        return f"No service available for chat completion"
+        
+        from ..utils.exceptions import ModelNotAvailableError
+        raise ModelNotAvailableError(f"No service available for chat completion. Requested service: {service_name}")
 
 
 # 全局LangChain管理器实例

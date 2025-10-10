@@ -3,8 +3,9 @@ from typing import Optional
 import logging
 import httpx
 
-from ...schemas.translate import SimpleTextRequest
+from ...schemas.translate import SimpleTextRequest, AsyncTaskRequest
 from ...services.async_task_manager import task_manager, TaskType, TaskStatus
+from ...services.callback_registry import callback_registry, create_email_notification_callback
 from ...utils.exceptions import (
     EmptyTextError,
     TextTooLongError,
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/api/translate/async", tags=["async-tasks"])
 
 @router.post("/zh2en")
 async def submit_async_zh2en_task(
-    req: SimpleTextRequest,
+    req: AsyncTaskRequest,
 ):
     """
     提交异步中译英任务
@@ -32,15 +33,41 @@ async def submit_async_zh2en_task(
     # 验证输入
     if not req.text or not req.text.strip():
         raise EmptyTextError()
-    
+
     # 兼容空字符串模型名，统一使用默认模型
     model_name = (getattr(req, 'model', None) or "").strip() or None
+    logger.info(f"提交异步中译英任务: text_length={len(req.text)}, model={model_name}")
+
+    # 创建配置化的失败回调
+    failure_callback = None
+    if req.config:
+        # 根据配置创建回调函数
+        config_dict = req.config.dict()
+        failure_callback = callback_registry.create_configured_callback(config_dict)
+        
+        # 如果指定了邮箱，创建邮件通知回调
+        if req.config.notification_email:
+            email_callback = create_email_notification_callback(req.config.notification_email)
+            # 如果已有配置回调，组合它们
+            if failure_callback:
+                original_callback = failure_callback
+                async def combined_callback(failure_data):
+                    await original_callback(failure_data)
+                    await email_callback(failure_data)
+                failure_callback = combined_callback
+            else:
+                failure_callback = email_callback
+
     task_id = task_manager.create_task(
         task_type=TaskType.ZH2EN,
         input_data={"text": req.text},
         model_name=model_name,
         use_chains=True,
+        max_retries=req.config.max_retries if req.config else 3,
+        failure_callback=failure_callback
     )
+
+    logger.info(f"异步中译英任务已提交: task_id={task_id}")
 
     return {
         "task_id": task_id,
@@ -303,3 +330,60 @@ async def get_task_by_id(
         }
 
     raise HTTPException(status_code=404, detail="Task not found")
+
+
+@router.get("/callbacks/available")
+async def list_available_callbacks():
+    """
+    列出所有可用的失败回调函数
+    """
+    return {
+        "available_callbacks": callback_registry.list_available(),
+        "description": {
+            "log_failure": "记录失败信息到日志",
+            "save_failure_details": "保存失败详情到文件", 
+            "send_notification": "发送失败通知",
+            "cleanup_task_data": "清理失败任务数据",
+            "slack_notification": "发送 Slack 通知（需配置）",
+            "database_log": "记录失败信息到数据库（需配置）"
+        }
+    }
+
+
+@router.post("/callbacks/test")
+async def test_failure_callback(
+    callback_name: str = Query(..., description="要测试的回调函数名称")
+):
+    """
+    测试失败回调函数
+    """
+    callback = callback_registry.get(callback_name)
+    if not callback:
+        raise HTTPException(status_code=404, detail=f"Callback '{callback_name}' not found")
+    
+    # 创建测试失败数据
+    from datetime import datetime
+    test_failure_data = {
+        "task_id": "test-task-123",
+        "task_type": "zh2en",
+        "error_message": "This is a test failure",
+        "error_traceback": "Test traceback",
+        "retry_count": 1,
+        "max_retries": 3,
+        "input_data": {"text": "测试文本"},
+        "created_at": datetime.now(),
+        "failed_at": datetime.now()
+    }
+    
+    try:
+        await callback(test_failure_data)
+        return {
+            "message": f"Callback '{callback_name}' executed successfully",
+            "callback_name": callback_name
+        }
+    except Exception as e:
+        logger.error(f"Error testing callback '{callback_name}': {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Callback test failed: {str(e)}"
+        )

@@ -197,7 +197,7 @@ GET {{baseUrl}}/api/translate/async/status/5a7b333f-503d-4b27-b68b-acb662f79d3f
 
 ### 异步：任务结果
 # 异步：任务结果
-GET {{baseUrl}}/api/translate/async/5a7b333f-503d-4b27-b68b-acb662f79d3f
+GET {{baseUrl}}/api/translate/async/23907512-5851-44b7-8fe0-d486499c52e1
 
 ### 异步：取消任务
 # 异步：取消任务

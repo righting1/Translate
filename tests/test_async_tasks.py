@@ -1,7 +1,7 @@
 import time
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app
 
 
 client = TestClient(app)
@@ -30,7 +30,7 @@ def test_async_end_to_end(monkeypatch):
         async def summarize(self, text: str, max_length: int = 200, **kwargs) -> str:
             return f"摘要({min(max_length, 20)}): {text[:min(len(text), 20)]}"
 
-    import services.langchain_translate as lct
+    import app.services.langchain_translate as lct
     monkeypatch.setattr(lct, "LangChainTranslationService", FakeLangChainService)
 
     def wait_until_completed(task_id: str, timeout_s: float = 3.0):

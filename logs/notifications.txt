@@ -1,0 +1,21 @@
+2025-10-10T15:56:00.032471 - 🚨 异步任务失败通知
+任务ID: 470a535c-aa3f-41c1-bea3-21fc66420e54
+任务类型: TaskType.ZH2EN
+错误信息: Model 'No service available for text generation. Requested service: openaixx' is not available or not configured
+重试次数: 0/2
+失败时间: 2025-10-10 15:56:00.026472
+
+2025-10-10T16:00:58.878106 - 🚨 异步任务失败通知
+任务ID: 5215212a-1719-41ac-9b94-196dbbe8977c
+任务类型: TaskType.ZH2EN
+错误信息: Model 'No service available for text generation. Requested service: openai' is not available or not configured
+重试次数: 0/1
+失败时间: 2025-10-10 16:00:58.875165
+
+2025-10-10T16:11:48.656972 - 🚨 异步任务失败通知
+任务ID: e18c44bf-47d4-45e3-9069-834acf2b9249
+任务类型: TaskType.ZH2EN
+错误信息: Model 'No service available for text generation. Requested service: openaixx' is not available or not configured
+重试次数: 0/2
+失败时间: 2025-10-10 16:11:48.654023
+

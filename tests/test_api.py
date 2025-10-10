@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app
 
 
 client = TestClient(app)
@@ -18,14 +18,14 @@ def test_greet():
 
 
 def test_translate_zh2en():
-    payload = {"text": "你好，世界", "task": "zh2en"}
+    payload = {"text": "你好，世界", "task": "zh2en", "target_language": "英文"}
     resp = client.post("/api/translate/run", json=payload)
     assert resp.status_code == 200
     assert "result" in resp.json()
 
 
 def test_translate_en2zh():
-    payload = {"text": "Hello, world", "task": "en2zh"}
+    payload = {"text": "Hello, world", "task": "en2zh", "target_language": "中文"}
     resp = client.post("/api/translate/run", json=payload)
     assert resp.status_code == 200
     assert "result" in resp.json()

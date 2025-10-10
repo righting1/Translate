@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  translate-api:
+    build: .
+    container_name: translate-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./app.log:/app/app.log
+      - ./app.err.log:/app/app.err.log
+    # 如需挂载模型或缓存目录可在此添加

@@ -37,9 +37,10 @@ def _service(model: Optional[str]) -> LangChainTranslationService:
 
 @router.post("/zh2en")
 async def stream_zh2en(req: SimpleTextRequest, model: Optional[str] = Query(None)):
+    logger.info(f"开始流式中译英: text_length={len(req.text)}, model={model or getattr(req, 'model', None)}")
     try:
         svc = _service(model or getattr(req, 'model', None))
-        # 使用与非流式一致的提示词模板，确保真正执行“中译英”
+        # 使用与非流式一致的提示词模板，确保真正执行"中译英"
         prompt = prompt_manager.get_translation_prompt(
             TranslationPromptType.ZH_TO_EN,
             text=req.text,
@@ -53,6 +54,9 @@ async def stream_zh2en(req: SimpleTextRequest, model: Optional[str] = Query(None
     except Exception as e:
         logger.error(f"stream zh2en error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+## 重复定义的 /zh2en 已移除，避免路由冲突
 
 
 @router.post("/en2zh")

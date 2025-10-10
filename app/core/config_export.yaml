@@ -1,0 +1,120 @@
+_old_virtual_path: D:\CRT\;E:\Linux\VMware\VM\bin\;D:\python\Scripts\;D:\python\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program
+  Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files (x86)\Microsoft SQL
+  Server\100\Tools\Binn\;C:\Program Files\Microsoft SQL Server\100\Tools\Binn\;C:\Program
+  Files\Microsoft SQL Server\100\DTS\Binn\;%QUARTUS_ROOTDIR%\bin;C:\Program Files\dotnet\;D:\anacodea\envs\python_1\Scripts\;D:\anacodea\envs\python_1;D:\anacodea;D:\anacodea\Library\bin;D:\anacodea\Library\mingw-w64\bin;D:\anacodea\Scripts\;D:\myMingw\mingw64\bin;D:\setup\Java\jdk-17\bin;D:\setup\Java\jdk-17\jre\bin;D:\Maven\apache-maven-3.8.8\bin;D:\GlobalNodeModules\node_modules\yarn\bin;E:\Jmeter\apache-jmeter-4.0\apache-jmeter-4.0\bin;D:\setup\Erlang
+  OTP\bin;D:\setup\RabbitMQ Server\rabbitmq_server-3.13.0\sbin;E:\Redis\setup\win\Redis-x64-5.0.14.1;D:\nodejs\;D:\setup\Git\cmd;D:\Rust\path\.rustup;D:\Rust\path\.cargo;D:\GlobalNodeModules;;D:\setup\Docker\Docker\resources\bin;D:\Rust\path\.cargo\bin;C:\Users\lenovo\AppData\Local\Microsoft\WindowsApps;C:\Program
+  Files\Bandizip\;D:\vccode\Microsoft VS Code\bin;C:\Users\lenovo\.dotnet\tools;E:\myjava\myidea\IntelliJ
+  IDEA 2023.2.5\bin;;D:\cursor\setup\cursor\resources\app\bin;C:\Users\lenovo\AppData\Local\Pandoc\;C:\Users\lenovo\AppData\Roaming\npm;D:\tools\CodeBuddy\CodeBuddy\bin
+_old_virtual_prompt: $P$G
+ai_model:
+  dashscope:
+    api_key: sk-7a3acac23fd24d7eb382f7196096eeae
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    max_tokens: 2000
+    model: qwen-plus
+    service_type: dashscope
+    temperature: 0.3
+    timeout: 60
+  default_model: dashscope
+allusersprofile: C:\ProgramData
+anthropic_auth_token: sk-RFFA2tFaYDKDcSuZBljAlfLqGpURilgKJ37E3u42D6NNXjMS
+anthropic_base_url: https://wolfai.top
+app:
+  app_name: Translate API
+  debug: true
+  host: 127.0.0.1
+  log_level: info
+  port: 8000
+  reload: true
+  version: 0.1.0
+appcode_vm_options: E:\myjava\Tool\vmoptions\appcode.vmoptions
+appdata: C:\Users\lenovo\AppData\Roaming
+cargo_home: D:\Rust\path\.cargo
+classpath: D:\setup\Java\jdk-17\lib\dt.jar;D:\setup\Java\jdk-17\lib\tools.jar;E:\Jmeter\apache-jmeter-4.0\apache-jmeter-4.0\lib\ext\ApacheJMeter_core.jar;E:\Jmeter\apache-jmeter-4.0\apache-jmeter-4.0\lib\jorphan.jar;
+clion_vm_options: E:\myjava\Tool\vmoptions\clion.vmoptions
+commonprogramfiles: C:\Program Files\Common Files
+commonprogramfiles(x86): C:\Program Files (x86)\Common Files
+commonprogramw6432: C:\Program Files\Common Files
+computername: DESKTOP-3PRL6K0
+comspec: C:\Windows\system32\cmd.exe
+datagrip_vm_options: E:\myjava\Tool\vmoptions\datagrip.vmoptions
+dataspell_vm_options: E:\myjava\Tool\vmoptions\dataspell.vmoptions
+devecostudio_vm_options: E:\myjava\Tool\vmoptions\devecostudio.vmoptions
+driverdata: C:\Windows\System32\Drivers\DriverData
+erlang_home: D:\setup\Erlang OTP
+fps_browser_app_profile_string: Internet Explorer
+fps_browser_user_profile_string: Default
+gateway_vm_options: E:\myjava\Tool\vmoptions\gateway.vmoptions
+goland_vm_options: E:\myjava\Tool\vmoptions\goland.vmoptions
+homedrive: 'C:'
+homepath: \Users\lenovo
+idea_vm_options: E:\myjava\Tool\vmoptions\idea.vmoptions
+intellij idea: E:\myjava\myidea\IntelliJ IDEA 2023.2.5\bin;
+java_home: D:\setup\Java\jdk-17
+java_home17: D:\setup\Java\jdk-17
+java_home6: C:\Program Files (x86)\Java\jdk1.6.0
+java_home8: D:\setup\Java\jdk-1.8
+jetbrains_client_vm_options: E:\myjava\Tool\vmoptions\jetbrains_client.vmoptions
+jetbrainsclient_vm_options: E:\myjava\Tool\vmoptions\jetbrainsclient.vmoptions
+jmeter_home: E:\Jmeter\apache-jmeter-4.0\apache-jmeter-4.0
+localappdata: C:\Users\lenovo\AppData\Local
+logonserver: \\DESKTOP-3PRL6K0
+maven_home: D:\Maven\apache-maven-3.8.8
+number_of_processors: 8
+onedrive: C:\Users\lenovo\OneDrive
+os: Windows_NT
+path: D:\pythonProjects\Translate\.venv\Scripts;D:\CRT\;E:\Linux\VMware\VM\bin\;D:\python\Scripts\;D:\python\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program
+  Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files (x86)\Microsoft SQL
+  Server\100\Tools\Binn\;C:\Program Files\Microsoft SQL Server\100\Tools\Binn\;C:\Program
+  Files\Microsoft SQL Server\100\DTS\Binn\;%QUARTUS_ROOTDIR%\bin;C:\Program Files\dotnet\;D:\anacodea\envs\python_1\Scripts\;D:\anacodea\envs\python_1;D:\anacodea;D:\anacodea\Library\bin;D:\anacodea\Library\mingw-w64\bin;D:\anacodea\Scripts\;D:\myMingw\mingw64\bin;D:\setup\Java\jdk-17\bin;D:\setup\Java\jdk-17\jre\bin;D:\Maven\apache-maven-3.8.8\bin;D:\GlobalNodeModules\node_modules\yarn\bin;E:\Jmeter\apache-jmeter-4.0\apache-jmeter-4.0\bin;D:\setup\Erlang
+  OTP\bin;D:\setup\RabbitMQ Server\rabbitmq_server-3.13.0\sbin;E:\Redis\setup\win\Redis-x64-5.0.14.1;D:\nodejs\;D:\setup\Git\cmd;D:\Rust\path\.rustup;D:\Rust\path\.cargo;D:\GlobalNodeModules;;D:\setup\Docker\Docker\resources\bin;D:\Rust\path\.cargo\bin;C:\Users\lenovo\AppData\Local\Microsoft\WindowsApps;C:\Program
+  Files\Bandizip\;D:\vccode\Microsoft VS Code\bin;C:\Users\lenovo\.dotnet\tools;E:\myjava\myidea\IntelliJ
+  IDEA 2023.2.5\bin;;D:\cursor\setup\cursor\resources\app\bin;C:\Users\lenovo\AppData\Local\Pandoc\;C:\Users\lenovo\AppData\Roaming\npm;D:\tools\CodeBuddy\CodeBuddy\bin
+pathext: .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW
+phpstorm_vm_options: E:\myjava\Tool\vmoptions\phpstorm.vmoptions
+processor_architecture: AMD64
+processor_identifier: Intel64 Family 6 Model 140 Stepping 1, GenuineIntel
+processor_level: 6
+processor_revision: 8c01
+programdata: C:\ProgramData
+programfiles: C:\Program Files
+programfiles(x86): D:\setup
+programw6432: C:\Program Files
+prompt: (.venv) $P$G
+psmodulepath: D:\setup\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+pt7home: D:\计算机网络实验\PT\Cisco Packet Tracer 7.0
+public: C:\Users\Public
+pycharm_display_port: 63342
+pycharm_hosted: 1
+pycharm_interactive_plots: 1
+pycharm_project_id: 6170548b
+pycharm_uuid: efca9f74-840e-3523-be5d-9bfc3c503dd4
+pycharm_vm_options: E:\myjava\Tool\vmoptions\pycharm.vmoptions
+pythonioencoding: UTF-8
+pythonpath: D:\pythonProjects\Translate-my;D:/python/pycharm/PyCharm 2025.2.2/plugins/python-ce/helpers/pycharm_plotly_backend;D:/python/pycharm/PyCharm
+  2025.2.2/plugins/python-ce/helpers/pycharm_altair_backend;D:/python/pycharm/PyCharm
+  2025.2.2/plugins/python-ce/helpers/pycharm_matplotlib_backend;D:/python/pycharm/PyCharm
+  2025.2.2/plugins/python-ce/helpers/pycharm_display
+pythonunbuffered: 1
+qt_scale_factor: 1
+rabbitmq_server: D:\setup\RabbitMQ Server\rabbitmq_server-3.13.0
+redis_home: E:\Redis\setup\win\Redis-x64-5.0.14.1
+rider_vm_options: E:\myjava\Tool\vmoptions\rider.vmoptions
+rubymine_vm_options: E:\myjava\Tool\vmoptions\rubymine.vmoptions
+rustup_home: D:\Rust\path\.rustup
+sessionname: Console
+studio_vm_options: E:\myjava\Tool\vmoptions\studio.vmoptions
+systemdrive: 'C:'
+systemroot: C:\Windows
+temp: C:\Users\lenovo\AppData\Local\Temp
+tmp: C:\Users\lenovo\AppData\Local\Temp
+userdomain: DESKTOP-3PRL6K0
+userdomain_roamingprofile: DESKTOP-3PRL6K0
+username: lenovo
+userprofile: C:\Users\lenovo
+virtual_env: D:\pythonProjects\Translate\.venv
+vs100comntools: D:\vc2010\Common7\Tools\
+webide_vm_options: E:\myjava\Tool\vmoptions\webide.vmoptions
+webstorm_vm_options: E:\myjava\Tool\vmoptions\webstorm.vmoptions
+windir: C:\Windows
+zes_enable_sysman: 1

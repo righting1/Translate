@@ -1,0 +1,13 @@
+{
+  "task_id": "470a535c-aa3f-41c1-bea3-21fc66420e54",
+  "task_type": "zh2en",
+  "error_message": "Model 'No service available for text generation. Requested service: openaixx' is not available or not configured",
+  "error_traceback": "Traceback (most recent call last):\n  File \"D:\\pythonProjects\\Translate-my\\app\\services\\async_task_manager.py\", line 305, in _execute_task\n    result = await service.zh2en(task.input_data['text'])\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\pythonProjects\\Translate-my\\app\\services\\langchain_translate.py\", line 169, in zh2en\n    result = await self.langchain_manager.generate_text(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\pythonProjects\\Translate-my\\app\\services\\langchain_service.py\", line 497, in generate_text\n    raise ModelNotAvailableError(f\"No service available for text generation. Requested service: {service_name}\")\napp.utils.exceptions.ModelNotAvailableError: Model 'No service available for text generation. Requested service: openaixx' is not available or not configured\n",
+  "retry_count": 0,
+  "max_retries": 2,
+  "input_data": {
+    "text": "xxx"
+  },
+  "created_at": "2025-10-10T15:55:59.991698",
+  "failed_at": "2025-10-10T15:56:00.026472"
+}

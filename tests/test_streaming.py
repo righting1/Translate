@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app
 
 client = TestClient(app)
 
@@ -16,8 +16,8 @@ def test_streaming_end_to_end(monkeypatch):
         def __init__(self, *args, **kwargs):
             pass
 
-    import services.langchain_translate as lct
-    import services.langchain_service as lcs
+    import app.services.langchain_translate as lct
+    import app.services.langchain_service as lcs
 
     # 替换 LangChainTranslationService 以仍然走 langchain_manager 的流接口
     monkeypatch.setattr(lct, "LangChainTranslationService", lct.LangChainTranslationService)

@@ -8,11 +8,12 @@ import asyncio
 import uuid
 import time
 import logging
-from typing import Dict, Any, Optional, Union, List
+from typing import Dict, Any, Optional, Union, List, Callable, Awaitable
 from enum import Enum
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 import json
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ class TaskInfo:
     progress: int = 0  # 进度百分比 0-100
     model_name: Optional[str] = None
     use_chains: bool = True
+    retry_count: int = 0  # 重试次数，失败了还可以设置重试
+    max_retries: int = 3  # 最大重试次数
+    failure_callback: Optional[Callable] = None  # 失败回调函数
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式"""
@@ -70,6 +74,9 @@ class AsyncTaskManager:
         self._semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self._cleanup_started = False
         
+        # 全局失败回调函数
+        self._global_failure_callbacks: List[Callable] = []
+        
         # 启动清理任务（仅当存在运行中的事件循环时）
         try:
             loop = asyncio.get_running_loop()
@@ -84,7 +91,9 @@ class AsyncTaskManager:
         task_type: TaskType,
         input_data: Dict[str, Any],
         model_name: Optional[str] = None,
-        use_chains: bool = True
+        use_chains: bool = True,
+        max_retries: int = 3,
+        failure_callback: Optional[Callable] = None
     ) -> str:
         """创建新任务"""
         task_id = str(uuid.uuid4())
@@ -98,7 +107,9 @@ class AsyncTaskManager:
             updated_at=now,
             input_data=input_data,
             model_name=model_name,
-            use_chains=use_chains
+            use_chains=use_chains,
+            max_retries=max_retries,
+            failure_callback=failure_callback
         )
         
         self.tasks[task_id] = task_info
@@ -192,6 +203,70 @@ class AsyncTaskManager:
         tasks.sort(key=lambda x: x['created_at'], reverse=True)
         return tasks
     
+    def add_global_failure_callback(self, callback: Callable):
+        """添加全局失败回调函数"""
+        self._global_failure_callbacks.append(callback)
+        logger.info(f"Added global failure callback: {callback.__name__}")
+    
+    def remove_global_failure_callback(self, callback: Callable):
+        """移除全局失败回调函数"""
+        if callback in self._global_failure_callbacks:
+            self._global_failure_callbacks.remove(callback)
+            logger.info(f"Removed global failure callback: {callback.__name__}")
+    
+    async def _execute_failure_callbacks(self, task: TaskInfo, error: Exception):
+        """执行失败回调函数"""
+        callback_data = {
+            "task_id": task.task_id,
+            "task_type": task.task_type,
+            "error_message": str(error),
+            "error_traceback": traceback.format_exc(),
+            "retry_count": task.retry_count,
+            "max_retries": task.max_retries,
+            "input_data": task.input_data,
+            "created_at": task.created_at,
+            "failed_at": datetime.now()
+        }
+        
+        # 执行任务特定的失败回调
+        if task.failure_callback:
+            try:
+                if asyncio.iscoroutinefunction(task.failure_callback):
+                    await task.failure_callback(callback_data)
+                else:
+                    task.failure_callback(callback_data)
+                logger.info(f"Executed task-specific failure callback for task {task.task_id}")
+            except Exception as cb_error:
+                logger.error(f"Error in task-specific failure callback for task {task.task_id}: {cb_error}")
+        
+        # 执行全局失败回调
+        for callback in self._global_failure_callbacks:
+            try:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(callback_data)
+                else:
+                    callback(callback_data)
+                logger.info(f"Executed global failure callback: {callback.__name__}")
+            except Exception as cb_error:
+                logger.error(f"Error in global failure callback {callback.__name__}: {cb_error}")
+    
+    async def _should_retry_task(self, task: TaskInfo, error: Exception) -> bool:
+        """判断任务是否应该重试"""
+        if task.retry_count >= task.max_retries:
+            return False
+            
+        # 可以根据错误类型决定是否重试
+        # 例如：网络错误可以重试，但是参数错误不重试
+        retry_conditions = [
+            "timeout" in str(error).lower(),
+            "connection" in str(error).lower(),
+            "network" in str(error).lower(),
+            "rate limit" in str(error).lower(),
+            "service unavailable" in str(error).lower(),
+        ]
+        
+        return any(retry_conditions)
+    
     async def _execute_task(self, task_id: str):
         """执行任务"""
         # 确保清理任务已启动
@@ -255,10 +330,31 @@ class AsyncTaskManager:
                 task.updated_at = datetime.now()
                 logger.info(f"Task {task_id} was cancelled")
             except Exception as e:
-                task.status = TaskStatus.FAILED
-                task.error_message = str(e)
-                task.updated_at = datetime.now()
-                logger.error(f"Task {task_id} failed: {e}")
+                logger.error(f"Task {task_id} failed (attempt {task.retry_count + 1}): {e}")
+                
+                # 检查是否应该重试
+                if await self._should_retry_task(task, e):
+                    task.retry_count += 1
+                    task.updated_at = datetime.now()
+                    logger.info(f"Retrying task {task_id} (attempt {task.retry_count + 1}/{task.max_retries + 1})")
+                    
+                    # 延迟后重试（指数退避）
+                    retry_delay = min(2 ** task.retry_count, 60)  # 最大延迟60秒
+                    await asyncio.sleep(retry_delay)
+                    
+                    # 递归重试
+                    await self._execute_task(task_id)
+                    return
+                else:
+                    # 不能重试或已达到最大重试次数
+                    task.status = TaskStatus.FAILED
+                    task.error_message = str(e)
+                    task.updated_at = datetime.now()
+                    
+                    # 执行失败回调
+                    await self._execute_failure_callbacks(task, e)
+                    
+                    logger.error(f"Task {task_id} failed permanently after {task.retry_count} retries: {e}")
             finally:
                 # 清理运行中的任务记录
                 if task_id in self._running_tasks:
@@ -291,3 +387,10 @@ class AsyncTaskManager:
 
 # 全局任务管理器实例
 task_manager = AsyncTaskManager()
+
+# 自动注册默认的失败回调函数
+try:
+    from .failure_callbacks import register_default_callbacks
+    register_default_callbacks(task_manager)
+except ImportError:
+    logger.warning("Failed to import failure callbacks - continuing without them")

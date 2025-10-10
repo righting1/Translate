@@ -22,6 +22,13 @@ router = APIRouter(prefix="/api/translate", tags=["translate"])
 
 
 def get_translation_service(req: TranslateRequest) -> TranslationService:
+    # 验证模型是否存在
+    if req.model:
+        from ...services.ai_model import ai_model_manager
+        available_services = ai_model_manager.get_available_services()
+        if req.model not in available_services:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail=f"Model '{req.model}' is not available. Available models: {available_services}")
     return TranslationService(model_name=req.model)
 
 
@@ -39,6 +46,8 @@ async def run_translate(
     req: TranslateRequest,
     service: TranslationService = Depends(get_translation_service),
 ) -> TranslateResponse:
+    logger.info(f"收到翻译请求: task={req.task.value}, text_length={len(req.text)}, model={req.model}")
+
     if req.task == FeatureCode.zh2en:
         result = await service.zh2en(req.text)
         target_lang = "英文"
@@ -63,6 +72,8 @@ async def run_translate(
         result = await service.summarize(req.text)
         target_lang = "总结"
         source_lang = "原文"
+
+    logger.info(f"翻译完成: task={req.task.value}, result_length={len(result)}")
 
     return TranslateResponse(
         result=result,
@@ -300,7 +311,12 @@ async def validate_prompt_type(req: ValidatePromptRequest):
     try:
         from ...services.prompt.utils import prompt_validator
         result = prompt_validator.validate_prompt_request(req.category, req.prompt_type)
+        # 检查验证结果
+        if not result.get("valid", True):
+            raise HTTPException(status_code=400, detail=result.get("error", "Invalid prompt configuration"))
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Validation error: {str(e)}")
 

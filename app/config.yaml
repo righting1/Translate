@@ -15,12 +15,16 @@ ai_model:
   # 阿里云DashScope配置（通义千问）
   dashscope:
     service_type: "dashscope"  # 添加服务类型
-    api_key: "sk-7a3acac23fd24d7eb382f7196096eeae"  # 从环境变量获取
-    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 修复：使用兼容模式URL
+    #api_key: "sk-7a3acac23fd24d7eb382f7196096eeae"  # 从环境变量获取
+    api_key: {DASHSCOPE_API_KEY}  # 从环境变量获取
+    base_url: {DASHSCOPE_BASE_URL}  # 修复：使用兼容模式URL
     model: "qwen-plus"
     temperature: 0.3
     max_tokens: 2000
     timeout: 60  # 增加超时时间
+
+
+
   
 #  # OpenAI配置
 #  openai:

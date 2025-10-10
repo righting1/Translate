@@ -105,8 +105,7 @@ class LangChainTranslationService:
             logger.info("All chains initialized successfully")
             
         except Exception as e:
-            logger.error(f"Failed to initialize some chains: {e}")
-            print(f"Warning: Failed to initialize some chains: {e}")
+            logger.warning(f"Failed to initialize some chains: {e}")
     
     async def translate(self, text: str, target_language: str, source_language: Optional[str] = None, context: Optional[str] = None, **kwargs) -> str:
         """
@@ -139,9 +138,8 @@ class LangChainTranslationService:
                 )
         except Exception as e:
             logger.error(f"Translation error: {e}")
-            print(f"Translation error: {e}")
-            # 降级到简单翻译
-            return f"Translation failed: {str(e)}"
+            # 重新抛出异常让上层处理
+            raise
     
     async def zh2en(self, text: str, context: Optional[str] = None, **kwargs) -> str:
         """中文翻译成英文"""
@@ -177,7 +175,7 @@ class LangChainTranslationService:
             
         except Exception as e:
             logger.error(f"zh2en translation failed: {e}")
-            return f"Translation failed: {str(e)}"
+            raise
     
     async def en2zh(self, text: str, context: Optional[str] = None, **kwargs) -> str:
         """英文翻译成中文"""
@@ -211,7 +209,7 @@ class LangChainTranslationService:
             
         except Exception as e:
             logger.error(f"en2zh translation failed: {e}")
-            return f"Translation failed: {str(e)}"
+            raise
     
     async def auto_translate(self, text: str, target_language: Optional[str] = None, source_language: Optional[str] = None, context: Optional[str] = None, **kwargs) -> str:
         """自动检测语言并翻译"""
@@ -251,7 +249,7 @@ class LangChainTranslationService:
             return result.strip()
             
         except Exception as e:
-            return f"Translation failed: {str(e)}"
+                raise
     
     async def summarize(self, text: str, max_length: int = 200, context: Optional[str] = None, **kwargs) -> str:
         """文本总结"""
@@ -285,7 +283,7 @@ class LangChainTranslationService:
             return result.strip()
             
         except Exception as e:
-            return f"Summarization failed: {str(e)}"
+              raise
     
     async def keyword_summary(self, text: str, summary_length: int = 100, **kwargs) -> str:
         """关键词提取总结"""
@@ -311,7 +309,7 @@ class LangChainTranslationService:
             return result.strip()
             
         except Exception as e:
-            return f"Keyword summary failed: {str(e)}"
+                raise RuntimeError(f"Keyword summary failed: {str(e)}")
     
     async def structured_summary(self, text: str, max_length: int = 300, **kwargs) -> str:
         """结构化总结"""
@@ -337,7 +335,7 @@ class LangChainTranslationService:
             return result.strip()
             
         except Exception as e:
-            return f"Structured summary failed: {str(e)}"
+            raise RuntimeError(f"Structured summary failed: {str(e)}")
     
     async def chat_with_context(
         self, 
@@ -360,7 +358,7 @@ class LangChainTranslationService:
             return result.strip()
             
         except Exception as e:
-            return f"Chat completion failed: {str(e)}"
+            raise RuntimeError(f"Chat completion failed: {str(e)}")
     
     def get_available_models(self) -> list:
         """获取可用的AI模型列表"""

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from enum import Enum
 
 
@@ -197,5 +197,21 @@ class SimpleTextRequest(BaseModel):
 class ValidatePromptRequest(BaseModel):
     category: str
     prompt_type: str
+
+
+class AsyncTaskConfig(BaseModel):
+    """异步任务配置"""
+    max_retries: Optional[int] = Field(default=3, ge=0, le=10, description="最大重试次数")
+    enable_notifications: Optional[bool] = Field(default=False, description="是否启用失败通知")
+    save_failure_details: Optional[bool] = Field(default=True, description="是否保存失败详情到文件")
+    notification_email: Optional[str] = Field(default=None, description="失败通知邮箱")
+    custom_callback_name: Optional[str] = Field(default=None, description="自定义回调函数名称")
+
+
+class AsyncTaskRequest(BaseModel):
+    """增强的异步任务请求"""
+    text: str = Field(..., min_length=1)
+    model: Optional[str] = None
+    config: Optional[AsyncTaskConfig] = Field(default_factory=AsyncTaskConfig)
 
 

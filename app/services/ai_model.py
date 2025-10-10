@@ -57,6 +57,8 @@ class OpenAIService(AIModelBase):
         **kwargs
     ) -> str:
         """OpenAI聊天补全"""
+        logger.info(f"OpenAI chat_completion: model={self.model}, messages_count={len(messages)}")
+        
         if not self.api_key:
             raise AuthenticationError("OpenAI API key not configured", model_name=self.model)
         
@@ -81,6 +83,7 @@ class OpenAIService(AIModelBase):
                 )
                 response.raise_for_status()
                 result = response.json()
+                logger.info(f"OpenAI chat_completion请求成功: status={response.status_code}")
                 return result["choices"][0]["message"]["content"]
         except httpx.TimeoutException as e:
             logger.error(f"OpenAI API timeout: {e}")
@@ -332,10 +335,10 @@ class AIModelFactory:
     """AI模型工厂类"""
     
     _services = {
-        # "openai": OpenAIService,
-        # "zhipuai": ZhipuAIService,
-        # "ollama": OllamaService,
-        # "azure_openai": AzureOpenAIService,
+        "openai": OpenAIService,
+        "zhipuai": ZhipuAIService,
+        "ollama": OllamaService,
+        "azure_openai": AzureOpenAIService,
         "dashscope": DashScopeService
     }
     
@@ -363,18 +366,56 @@ class AIModelManager:
         self._initialize_services()
     
     def _initialize_services(self):
-        """初始化所有配置的服务"""
-        ai_config = getattr(settings, 'ai_model', {})
-        self._default_service = ai_config.get('default_model', 'openai')
-        
-        for service_name in AIModelFactory.get_available_services():
-            service_config = ai_config.get(service_name)
-            if service_config:
-                try:
-                    service = AIModelFactory.create_service(service_name, service_config)
-                    self._services[service_name] = service
-                except Exception as e:
-                    print(f"Failed to initialize {service_name} service: {e}")
+        """初始化所有配置的服务，兼容两种配置格式：
+        1) 列表式：ai_model.models = [{ name, type, ... }]
+        2) 扁平式：ai_model.<serviceName> = { service_type/type, ... }
+        """
+        ai_config = getattr(settings, 'ai_model', {}) or {}
+        self._default_service = ai_config.get('default_model') or ai_config.get('default') or 'openai'
+
+        available_types = set(AIModelFactory.get_available_services())
+
+        # 先尝试读取列表式配置
+        models_list = ai_config.get('models')
+        if isinstance(models_list, list) and models_list:
+            logger.info("加载到的模型配置（列表式）：%s", models_list)
+            for model_cfg in models_list:
+                model_type = model_cfg.get('type') or model_cfg.get('service_type')
+                name = model_cfg.get('name')
+                logger.info("尝试注册模型: %s 类型: %s", name, model_type)
+                if model_type and name and model_type in available_types:
+                    try:
+                        service = AIModelFactory.create_service(model_type, model_cfg)
+                        self._services[name] = service
+                        logger.info("模型 %s 注册成功", name)
+                    except Exception as e:
+                        logger.error("Failed to initialize %s service: %s", name, e)
+        else:
+            # 兼容扁平式配置：遍历 ai_model 下的键（排除默认项），每个键代表一个服务实例
+            logger.info("models 列表未提供，尝试从扁平配置注册模型")
+            flat_registered = []
+            for key, cfg in ai_config.items():
+                if key in {"default_model", "default"}:
+                    continue
+                if not isinstance(cfg, dict):
+                    continue
+                model_type = cfg.get('type') or cfg.get('service_type') or key
+                name = cfg.get('name') or key
+                logger.info("尝试注册模型(扁平): %s 类型: %s", name, model_type)
+                if model_type in available_types:
+                    try:
+                        # 确保传入工厂的配置包含 name 字段（可选）
+                        cfg_for_create = dict(cfg)
+                        cfg_for_create.setdefault('name', name)
+                        service = AIModelFactory.create_service(model_type, cfg_for_create)
+                        self._services[name] = service
+                        flat_registered.append(name)
+                        logger.info("模型 %s 注册成功", name)
+                    except Exception as e:
+                        logger.error("Failed to initialize %s service: %s", name, e)
+            logger.info("扁平配置注册完成：%s", flat_registered)
+
+        logger.info("最终可用模型：%s", list(self._services.keys()))
     
     def get_service(self, service_name: Optional[str] = None) -> AIModelBase:
         """获取AI服务实例"""

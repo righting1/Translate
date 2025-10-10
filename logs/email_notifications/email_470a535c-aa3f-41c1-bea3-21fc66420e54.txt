@@ -1,0 +1,14 @@
+To: test@example.com
+Subject: 任务失败通知 - 470a535c-aa3f-41c1-bea3-21fc66420e54
+
+
+            异步任务失败通知
+            
+            任务ID: 470a535c-aa3f-41c1-bea3-21fc66420e54
+            任务类型: TaskType.ZH2EN
+            错误信息: Model 'No service available for text generation. Requested service: openaixx' is not available or not configured
+            重试次数: 0/2
+            失败时间: 2025-10-10 15:56:00.026472
+            
+            请检查系统状态并处理相关问题。
+            

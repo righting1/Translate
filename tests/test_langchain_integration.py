@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch, AsyncMock
 import pytest
-from main import app
+from app.main import app
 
 client = TestClient(app)
 
@@ -40,7 +40,7 @@ class TestLangChainAPI:
         resp = client.delete("/api/translate/langchain/chains/clear")
         assert resp.status_code != 404
 
-    @patch('services.langchain_translate.LangChainTranslationService.translate')
+    @patch('app.services.langchain_translate.LangChainTranslationService.translate')
     def test_langchain_translate_with_mock(self, mock_translate):
         """使用Mock测试LangChain翻译功能"""
         # 设置mock返回值
@@ -59,7 +59,7 @@ class TestLangChainAPI:
             assert "translated_text" in data
             assert data["target_language"] == "中文"
 
-    @patch('services.langchain_translate.LangChainTranslationService.summarize')
+    @patch('app.services.langchain_translate.LangChainTranslationService.summarize')
     def test_langchain_summarize_with_mock(self, mock_summarize):
         """使用Mock测试LangChain总结功能"""
         # 设置mock返回值
@@ -152,8 +152,8 @@ class TestLangChainServices:
     def test_langchain_service_import(self):
         """测试LangChain服务导入"""
         try:
-            from services.langchain_service import LangChainManager
-            from services.langchain_translate import LangChainTranslationService
+            from app.services.langchain_service import LangChainManager
+            from app.services.langchain_translate import LangChainTranslationService
             assert True  # 导入成功
         except ImportError as e:
             pytest.fail(f"LangChain服务导入失败: {e}")
@@ -170,7 +170,7 @@ class TestLangChainServices:
     def test_langchain_translation_service_creation(self):
         """测试LangChain翻译服务创建"""
         try:
-            from services.langchain_translate import LangChainTranslationService
+            from app.services.langchain_translate import LangChainTranslationService
             service = LangChainTranslationService()
             assert service is not None
         except Exception as e:
@@ -183,7 +183,7 @@ class TestLangChainSchemas:
     def test_summarize_request_schema(self):
         """测试总结请求Schema"""
         try:
-            from schemas.translate import SummarizeRequest
+            from app.schemas.translate import SummarizeRequest
             
             # 测试基本创建
             request = SummarizeRequest(text="测试文本")
@@ -207,7 +207,7 @@ class TestLangChainSchemas:
     def test_summarize_response_schema(self):
         """测试总结响应Schema"""
         try:
-            from schemas.translate import SummarizeResponse
+            from app.schemas.translate import SummarizeResponse
             
             # 测试基本创建
             response = SummarizeResponse(summary="这是总结")
@@ -228,7 +228,7 @@ class TestLangChainSchemas:
     def test_translate_request_extended_schema(self):
         """测试扩展的翻译请求Schema"""
         try:
-            from schemas.translate import TranslateRequest
+            from app.schemas.translate import TranslateRequest
             
             # 测试新增的字段
             request = TranslateRequest(
@@ -247,7 +247,7 @@ class TestLangChainSchemas:
     def test_translate_response_backward_compatibility(self):
         """测试翻译响应向后兼容性"""
         try:
-            from schemas.translate import TranslateResponse
+            from app.schemas.translate import TranslateResponse
             
             # 测试新字段
             response = TranslateResponse(
@@ -285,7 +285,7 @@ class TestLangChainIntegration:
     def test_config_integration(self):
         """测试配置集成"""
         try:
-            from core.config import settings
+            from app.core.config import settings
             assert settings.ai_model is not None
             assert "default_model" in settings.ai_model
         except Exception as e:
@@ -294,7 +294,7 @@ class TestLangChainIntegration:
     def test_prompt_integration(self):
         """测试提示词集成"""
         try:
-            from prompt.templates import prompt_manager
+            from app.services.prompt.templates import prompt_manager
             assert prompt_manager is not None
         except Exception as e:
             pytest.fail(f"提示词集成测试失败: {e}")
