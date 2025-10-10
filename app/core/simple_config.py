@@ -2,8 +2,18 @@
 """
 简化的配置管理器
 专门为当前项目优化的配置加载器
+
+WARNING: This module is deprecated and will be removed in a future version.
+Please use app.core.config instead for new code.
 """
 import os
+import warnings
+
+warnings.warn(
+    "simple_config.py is deprecated. Use app.core.config instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Union, List

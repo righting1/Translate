@@ -42,7 +42,7 @@ async def submit_async_zh2en_task(
     failure_callback = None
     if req.config:
         # 根据配置创建回调函数
-        config_dict = req.config.dict()
+        config_dict = req.config.model_dump()  # 使用新的 model_dump() 方法
         failure_callback = callback_registry.create_configured_callback(config_dict)
         
         # 如果指定了邮箱，创建邮件通知回调

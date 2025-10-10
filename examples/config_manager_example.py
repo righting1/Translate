@@ -11,123 +11,89 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from app.core.simple_config import SimpleConfigManager, load_config
-from app.core.config_manager import ConfigManager, create_config_manager
+from app.core.config import settings
 
 
-def demo_simple_config():
-    """演示简化的配置管理器"""
-    print("=== 简化的配置管理器示例 ===")
+def demo_unified_config():
+    """演示统一的配置系统"""
+    print("=== 统一配置系统示例 ===")
 
-    # 使用便捷函数加载配置
-    config = load_config()
+    # 直接使用主配置系统
+    print(f"应用名称: {settings.app_name}")
+    print(f"调试模式: {settings.debug}")
+    print(f"端口: {settings.port}")
+    print(f"主机: {settings.host}")
+    print(f"日志级别: {settings.log_level}")
 
-    # 获取配置值
-    app_name = config.get("app.app_name", "Default App")
-    debug = config.get("app.debug", False)
-    port = config.get("app.port", 8000)
-
-    print(f"应用名称: {app_name}")
-    print(f"调试模式: {debug}")
-    print(f"端口: {port}")
-
-    # 获取API密钥
-    openai_key = config.get("openai_api_key")
-    if openai_key:
-        print("OpenAI API Key: 已配置")
+    # 检查AI模型配置
+    if settings.ai_model:
+        print("\nAI模型配置:")
+        print(f"默认模型: {settings.ai_model.get('default_model', 'N/A')}")
+        
+        # 显示可用的模型服务
+        available_models = []
+        for key, value in settings.ai_model.items():
+            if key != 'default_model' and isinstance(value, dict):
+                available_models.append(key)
+        print(f"可用模型: {', '.join(available_models)}")
     else:
-        print("OpenAI API Key: 未配置")
+        print("\nAI模型配置: 未配置")
 
-    # 设置配置值
-    config.set("custom.value", "test_value")
-    print(f"自定义值: {config.get('custom.value')}")
-
-    print()
-
-
-def demo_advanced_config():
-    """演示通用配置管理器"""
-    print("=== 通用配置管理器示例 ===")
-
-    # 创建配置管理器
-    config_manager = create_config_manager()
-
-    # 加载配置
-    config = config_manager.load()
-
-    # 获取配置值
-    app_name = config_manager.get("app.app_name", "Default App")
-    debug = config_manager.get("app.debug", False)
-
-    print(f"应用名称: {app_name}")
-    print(f"调试模式: {debug}")
-
-    # 获取配置源信息
-    sources = config_manager.get_sources()
-    print(f"配置源数量: {len(sources)}")
-    for source in sources:
-        print(f"  - {source.path} ({source.format})")
-
-    # 导出配置
-    export_path = "config_export.yaml"
-    config_manager.export_to_file(export_path, "yaml")
-    print(f"配置已导出到: {export_path}")
+    # 检查环境变量配置
+    print(f"\n其他配置:")
+    print(f"数据库URL: {'已配置' if settings.database_url else '未配置'}")
+    print(f"JWT密钥: {'已配置' if settings.jwt_secret_key else '未配置'}")
+    print(f"Redis URL: {'已配置' if settings.redis_url else '未配置'}")
 
     print()
 
 
-def demo_custom_config():
-    """演示自定义配置管理器"""
-    print("=== 自定义配置管理器示例 ===")
-
-    # 创建自定义配置管理器
-    config_manager = ConfigManager(
-        config_paths=["config.yaml", "custom_config.json"],
-        dotenv_paths=[".env", ".env.local"],
-        env_prefix="MYAPP_",
-        auto_reload=False
-    )
-
-    # 加载配置
-    config = config_manager.load()
-
-    # 获取配置值
-    app_name = config_manager.get("app.app_name", "Custom App")
-    debug = config_manager.get("app.debug", False)
-
-    print(f"应用名称: {app_name}")
-    print(f"调试模式: {debug}")
-
+def demo_legacy_config():
+    """演示废弃的配置管理器（带警告）"""
+    print("=== 废弃配置管理器示例（将显示警告）===")
+    
+    try:
+        # 这将触发废弃警告
+        from app.core.config_manager import ConfigManager, create_config_manager
+        
+        # 创建配置管理器
+        config_manager = create_config_manager()
+        
+        # 加载配置
+        config = config_manager.load()
+        
+        # 获取配置值
+        app_name = config_manager.get("app.app_name", "Default App")
+        debug = config_manager.get("app.debug", False)
+        
+        print(f"应用名称: {app_name}")
+        print(f"调试模式: {debug}")
+        
+        print("注意：上面应该显示了废弃警告")
+        
+    except Exception as e:
+        print(f"废弃配置管理器示例失败（这是预期的）: {e}")
+    
     print()
 
 
-def demo_env_override():
-    """演示环境变量覆盖"""
-    print("=== 环境变量覆盖示例 ===")
-
-    # 设置环境变量
-    os.environ["MYAPP_APP_NAME"] = "Environment Override App"
-    os.environ["MYAPP_APP_DEBUG"] = "true"
-
-    # 创建配置管理器（带环境变量前缀）
-    config_manager = ConfigManager(
-        env_prefix="MYAPP_"
-    )
-
-    # 加载配置
-    config = config_manager.load()
-
-    # 获取配置值（会被环境变量覆盖）
-    app_name = config_manager.get("app_name", "Default App")
-    debug = config_manager.get("app_debug", False)
-
-    print(f"应用名称 (环境变量覆盖): {app_name}")
-    print(f"调试模式 (环境变量覆盖): {debug}")
-
-    # 清理环境变量
-    del os.environ["MYAPP_APP_NAME"]
-    del os.environ["MYAPP_APP_DEBUG"]
-
+def demo_config_comparison():
+    """演示新旧配置系统的对比"""
+    print("=== 配置系统对比 ===")
+    
+    print("✅ 新的统一配置系统优势:")
+    print("  - 基于 Pydantic，有类型验证")
+    print("  - 与 FastAPI 无缝集成")
+    print("  - 支持环境变量插值")
+    print("  - 配置结构清晰")
+    print("  - 性能更好")
+    
+    print("\n❌ 旧配置系统问题:")
+    print("  - 多个重复的配置系统")
+    print("  - 没有类型检查")
+    print("  - 维护复杂")
+    print("  - 功能重叠")
+    
     print()
 
 
@@ -136,10 +102,9 @@ if __name__ == "__main__":
     print("=" * 50)
 
     try:
-        demo_simple_config()
-        demo_advanced_config()
-        demo_custom_config()
-        demo_env_override()
+        demo_unified_config()
+        demo_legacy_config()
+        demo_config_comparison()
 
         print("所有示例运行完成！")
 

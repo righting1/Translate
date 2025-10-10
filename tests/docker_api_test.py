@@ -4,6 +4,7 @@ import time
 import argparse
 from typing import Optional, Tuple, Dict, Any, List
 
+import pytest
 import requests
 
 
@@ -37,6 +38,28 @@ class ResultCounter:
 
 
 COUNTER = ResultCounter()
+
+
+###############################################################################
+# pytest fixtures
+###############################################################################
+
+@pytest.fixture
+def base():
+    """基础URL fixture"""
+    return DEFAULT_BASE
+
+
+@pytest.fixture 
+def timeout():
+    """超时时间 fixture"""  
+    return DEFAULT_TIMEOUT
+
+
+@pytest.fixture
+def model():
+    """模型名称 fixture"""
+    return DEFAULT_MODEL
 
 
 def _print_pass(name: str, extra: str = ""):

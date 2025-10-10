@@ -24,15 +24,74 @@ class Settings(BaseModel):
     ai_model: Optional[Dict[str, Any]] = None
 
     # 新增的环境变量配置
-    # openai_api_key: Optional[str] = None
-    # openai_base_url: Optional[str] = None
-    # zhipuai_api_key: Optional[str] = None
-    # dashscope_api_key: Optional[str] = None
     database_url: Optional[str] = None
     jwt_secret_key: Optional[str] = None
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     redis_url: Optional[str] = None
+    
+    def reload(self, config_path: Optional[str] = None) -> "Settings":
+        """重新加载配置"""
+        path = config_path or _CONFIG_ABS_PATH
+        new_settings = Settings.load_from_env_and_yaml(path)
+        # 更新当前实例的所有字段
+        for field_name, field_value in new_settings.model_dump().items():
+            setattr(self, field_name, field_value)
+        logger.info("Configuration reloaded successfully")
+        return self
+    
+    def validate_ai_models(self) -> bool:
+        """验证AI模型配置"""
+        if not self.ai_model:
+            logger.warning("No AI model configuration found")
+            return False
+            
+        required_fields = ["default_model"]
+        for field in required_fields:
+            if field not in self.ai_model:
+                logger.error(f"Missing required AI model field: {field}")
+                return False
+        
+        # 检查默认模型是否存在于配置中
+        default_model = self.ai_model.get("default_model")
+        if default_model and default_model not in self.ai_model:
+            logger.warning(f"Default model '{default_model}' not found in configuration")
+            
+        logger.info("AI model configuration validation passed")
+        return True
+    
+    def get_active_models(self) -> list:
+        """获取所有激活的模型列表"""
+        if not self.ai_model:
+            return []
+            
+        active_models = []
+        for key, value in self.ai_model.items():
+            if key != "default_model" and isinstance(value, dict):
+                if value.get("enabled", True):  # 默认启用
+                    active_models.append(key)
+        
+        return active_models
+    
+    def export_config(self) -> Dict[str, Any]:
+        """导出当前配置为字典"""
+        return self.model_dump()
+    
+    def model_post_init(self, __context) -> None:
+        """模型初始化后的验证"""
+        # 验证端口范围
+        if not (1 <= self.port <= 65535):
+            raise ValueError(f"Port must be between 1 and 65535, got {self.port}")
+            
+        # 验证日志级别
+        valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if self.log_level.upper() not in valid_log_levels:
+            raise ValueError(f"Invalid log level: {self.log_level}")
+            
+        # 验证JWT算法
+        valid_algorithms = ["HS256", "HS384", "HS512", "RS256", "RS384", "RS512"]
+        if self.jwt_algorithm not in valid_algorithms:
+            raise ValueError(f"Invalid JWT algorithm: {self.jwt_algorithm}")
 
     @classmethod
     def load_from_env_and_yaml(cls, config_path: str = "config.yaml") -> "Settings":

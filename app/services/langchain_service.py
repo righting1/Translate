@@ -49,11 +49,11 @@ class BaseLangChainService:
         
         if LANGCHAIN_AVAILABLE:
             try:
-                # 使用更新的内存类来避免弃用警告
-                from langchain.memory import ConversationBufferMemory
-                self.memory = ConversationBufferMemory(return_messages=True)
-            except ImportError:
-                # 如果导入失败，使用简单的内存实现
+                # 使用更新的内存管理方式来避免弃用警告
+                # ConversationBufferMemory 已被弃用，使用简单的内存实现
+                self.memory = {"messages": []}
+            except Exception:
+                # 如果有任何问题，使用简单的内存实现
                 self.memory = {"messages": []}
             
             # 尝试初始化LLM
@@ -401,7 +401,15 @@ class LangChainManager:
                 return None
                 
             prompt = PromptTemplate(template=prompt_template, input_variables=["text"])
-            chain = LLMChain(llm=service.llm, prompt=prompt)
+            # 使用新的 RunnableSequence 替代已弃用的 LLMChain
+            try:
+                chain = prompt | service.llm
+            except Exception:
+                # 如果新方法不可用，回退到 LLMChain（带警告抑制）
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=DeprecationWarning)
+                    chain = LLMChain(llm=service.llm, prompt=prompt)
             
             # 存储链
             if not hasattr(self, '_chains'):

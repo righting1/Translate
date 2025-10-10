@@ -1,8 +1,18 @@
 """
 通用配置管理器
 支持多种配置格式和高级功能
+
+WARNING: This module is deprecated and will be removed in a future version.
+Please use app.core.config instead for new code.
 """
 import os
+import warnings
+
+warnings.warn(
+    "config_manager.py is deprecated. Use app.core.config instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 import json
 import logging
 from abc import ABC, abstractmethod

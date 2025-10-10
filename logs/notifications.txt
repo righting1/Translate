@@ -19,3 +19,10 @@
 重试次数: 0/2
 失败时间: 2025-10-10 16:11:48.654023
 
+2025-10-10T17:43:43.741413 - 🚨 异步任务失败通知
+任务ID: d75ba008-36b6-42b5-9980-67b518c8605d
+任务类型: TaskType.ZH2EN
+错误信息: Model 'No service available for text generation. Requested service: openaixx' is not available or not configured
+重试次数: 0/2
+失败时间: 2025-10-10 17:43:43.738410
+
